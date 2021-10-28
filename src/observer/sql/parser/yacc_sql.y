@@ -410,7 +410,7 @@ select_attr:
         }
     | COUNT LBRACE STAR RBRACE {
         RelAttr attr;
-        relation_attr_init_extra(&attr, NULL, "COUNT", "COUNT");
+        relation_attr_init_extra(&attr, NULL, "__trx", "COUNT");
         selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
         }
     | AVG LBRACE ID RBRACE {

@@ -223,7 +223,7 @@ RC ExecuteStage::check_attri_valid(RelAttr attr, Selects selects, Db *db){
     //LOG_INFO("check_ nullptr");
     for (size_t i = 0; i < selects.relation_num; i++){
       Table *table = db->find_table(selects.relations[i]);
-      if (strcmp(attr.attribute_name, "*") == 0 || strcmp(attr.attribute_name, "*") == 0) return RC::SUCCESS;;
+      if (strcmp(attr.attribute_name, "*") == 0 ) return RC::SUCCESS;;
       const FieldMeta* fieldmeta = table->table_meta().field(attr.attribute_name);
       if (fieldmeta != nullptr){
         exist = true;
@@ -339,18 +339,15 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
       end_trx_if_need(session, trx, false);
       return rc;
     } else {
-      TupleSchema ts = tuple_set.schema();
-        for(const auto &field: ts.fields()){
-        LOG_INFO("%s %s %s",field.calcu_name(),field.field_name(),field.table_name());
-      }
-      
+      // TupleSchema ts = tuple_set.schema();
+      //   for(const auto &field: ts.fields()){
+      //     LOG_INFO("%s %s %s",field.calcu_name(),field.field_name(),field.table_name());
+      //     }
+      LOG_INFO(" 123123");
       tuple_set.check_calculate();
       tuple_sets.push_back(std::move(tuple_set));
-      
     }
-    
   }
-
 
   std::stringstream ss;
   if (tuple_sets.size() > 1) {
@@ -382,7 +379,7 @@ static RC schema_add_field(Table *table, const char *field_name, TupleSchema &sc
     LOG_WARN("No such field. %s.%s", table->name(), field_name);
     return RC::SCHEMA_FIELD_MISSING;
   }
-  if (0 == strcmp(field_name, "COUNT")) schema.add_if_not_exists(INTS, table->name(), "COUNT", calculate_name);
+  if (0 == strcmp(field_name, "COUNT")) schema.add_if_not_exists(INTS, table->name(), "__trx", calculate_name);
   schema.add_if_not_exists(field_meta->type(), table->name(), field_meta->name(), calculate_name);
   return RC::SUCCESS;
 }

@@ -597,6 +597,10 @@ RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value
   FieldMeta f = *this->table_meta().field(attribute_name);
   memcpy(record->data + f.offset(), value->data, sizeof(value->type));
   RC rc = record_handler_->update_record(record);
+   //更新索引                                                                                                                  2021/10/26 14:12
+  // Index *i = this->find_index(attribute_name);
+  // if(i != nullptr){
+  //   i->insert_entry((const char*)value->data, &record->rid);
   return rc;
 }
 

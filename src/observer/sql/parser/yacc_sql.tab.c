@@ -1822,7 +1822,7 @@ yyreduce:
 #line 411 "yacc_sql.y" /* yacc.c:1652  */
     {
         RelAttr attr;
-        relation_attr_init_extra(&attr, NULL, "COUNT", "COUNT");
+        relation_attr_init_extra(&attr, NULL, "__trx", "COUNT");
         selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
         }
 #line 1829 "yacc_sql.tab.c" /* yacc.c:1652  */

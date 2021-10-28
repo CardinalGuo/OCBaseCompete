@@ -155,7 +155,7 @@ public:
         return ;
       }
       std::string str = schema_.field(i).calcu_name();
-      str.append("(").append(schema_.field(i).field_name()).append(")");
+      str.append("(").append(strcmp(schema_.field(i).field_name(), "__trx") == 0 ? "*" :schema_.field(i).field_name()).append(")");
       schema_out.add_if_not_exists(schema_.field(i).type(),schema_.field(i).table_name(),str.c_str(),schema_.field(i).calcu_name());
       //计算COUNT
       if(0 == strcmp("COUNT",calcu_name))

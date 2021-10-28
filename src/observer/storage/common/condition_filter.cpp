@@ -144,7 +144,7 @@ bool DefaultConditionFilter::filter(const Record &rec) const
   } else {
     right_value = (char *)right_.value;
   }
-  LOG_INFO("cmp_result %d",attr_type_);
+  //LOG_INFO("cmp_result %d",attr_type_);
   int cmp_result = 0;
   switch (attr_type_) {
     case DATES: {
@@ -166,7 +166,7 @@ bool DefaultConditionFilter::filter(const Record &rec) const
     case FLOATS: {
       float left = *(float *)left_value;
       float right = *(float *)right_value;
-      LOG_INFO("%f %f",left, right);
+      //LOG_INFO("%f %f",left, right);
       cmp_result = (int)((left - right == 0) ? 0 : (left - right > 0 ? 1 : -1));
     } break;
     default: {
