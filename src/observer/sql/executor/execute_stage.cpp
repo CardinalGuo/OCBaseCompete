@@ -33,6 +33,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/condition_filter.h"
 #include "storage/default/default_storage_stage.h"
 #include "storage/trx/trx.h"
+#include "storage/common/check_trans.h"
 
 using namespace common;
 
@@ -247,8 +248,50 @@ RC ExecuteStage::check_attri_valid(RelAttr attr, Selects selects, Db *db){
   if (!exist) return RC::INVALID_ARGUMENT;
   return RC::SUCCESS;
 }
+RC ExecuteStage::check_condition_value_equal(Condition condition,char *relations[MAX_NUM], size_t relation_num, Db *db){
+  AttrType tp_left = UNDEFINED, tp_right = UNDEFINED;
+  if (condition.left_is_attr) {
+    for (size_t i = 0; i < relation_num; i++){
+      Table *table = db->find_table(relations[i]);
+      const FieldMeta* fieldmeta = table->table_meta().field(condition.left_attr.attribute_name);
+      if (fieldmeta != nullptr){
+        LOG_INFO("%s",fieldmeta->name());
+        tp_left = fieldmeta->type();
+      }
+    }
+  }else{
+    tp_left = condition.left_value.type;
+  }
+
+  if (condition.right_is_attr) {
+    for (size_t i = 0; i < relation_num; i++){
+      Table *table = db->find_table(relations[i]);
+      const FieldMeta* fieldmeta = table->table_meta().field(condition.right_attr.attribute_name);
+      if (fieldmeta != nullptr){
+        
+        tp_right = fieldmeta->type();
+      }
+    }
+  }else{
+    tp_right = condition.right_value.type;
+  }
+
+  if ((tp_left == DATES) && !condition.right_is_attr){
+    //LOG_INFO("%d",tp_left);
+    if(!check_trans::check_date( (char *)condition.right_value.data)) return RC::INVALID_ARGUMENT;
+  }
+  if ((tp_right == DATES) && !condition.left_is_attr){
+    //LOG_INFO("%d",tp_right);
+    if(!check_trans::check_date( (char *)condition.left_value.data)) return RC::INVALID_ARGUMENT;
+  }
+
+
+  if ((tp_left == CHARS && tp_right == DATES )|| (tp_left == DATES && tp_right == CHARS)) return RC::SUCCESS;
+  return ((tp_left == tp_right) ? RC::SUCCESS : RC::INVALID_ARGUMENT);
+}
 
 RC ExecuteStage::check_condition_valid(Condition condition, Selects selects, Db *db){
+  
   if (condition.left_is_attr) {
     RC rc = check_attri_valid(condition.left_attr, selects, db);
     if (rc != SUCCESS) return RC::INVALID_ARGUMENT;
@@ -259,8 +302,13 @@ RC ExecuteStage::check_condition_valid(Condition condition, Selects selects, Db 
     if (rc != SUCCESS) return RC::INVALID_ARGUMENT;
   }
 
+  RC rc = check_condition_value_equal(condition, selects.relations, selects.relation_num, db);
+  if (rc != SUCCESS) return RC::INVALID_ARGUMENT;
+
   return RC::SUCCESS;
 }
+
+
 
 RC ExecuteStage::check_select(const Selects selects, const char *db){
   DefaultStorageStage *h = (DefaultStorageStage*)default_storage_stage_;

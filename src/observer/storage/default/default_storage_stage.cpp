@@ -164,10 +164,9 @@ void DefaultStorageStage::handle_event(StageEvent *event) {
   case SCF_INSERT: { // insert into
       const Inserts &inserts = sql->sstr.insertion;
       const char *table_name = inserts.relation_name;
-      for (size_t i = 0;i < inserts.record_num;i++){
-        rc = handler_->insert_record(current_trx, current_db, table_name, inserts.values_num[i], inserts.record_values[i]);
-        snprintf(response, sizeof(response), "%s\n", rc == RC::SUCCESS ? "SUCCESS" : "FAILURE");
-      }
+      //rc = handler_->insert_record(current_trx, current_db, table_name, inserts.record_num, inserts.value_num)
+      rc = handler_->insert_record(current_trx, current_db, table_name,inserts.record_num, inserts.values_num, inserts.record_values);
+      snprintf(response, sizeof(response), "%s\n", rc == RC::SUCCESS ? "SUCCESS" : "FAILURE");
       //rc = handler_->insert_record(current_trx, current_db, table_name, inserts.value_num, inserts.values);
     }
     break;

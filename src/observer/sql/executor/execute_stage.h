@@ -35,6 +35,7 @@ protected:
   RC check_table_valid(const Selects selects, Db *db);
   RC check_attri_valid(RelAttr attr, Selects selects, Db *db);
   RC check_condition_valid(Condition condition, Selects selects, Db *db);
+  RC check_condition_value_equal(Condition condition,char *relations[MAX_NUM], size_t relation_num, Db *db);
   bool initialize() override;
   void cleanup() override;
   void handle_event(common::StageEvent *event) override;

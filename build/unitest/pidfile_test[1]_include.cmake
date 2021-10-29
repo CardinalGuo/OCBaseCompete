@@ -1,0 +1,5 @@
+if(EXISTS "/mnt/c/Users/Pope_Guo/Desktop/miniob/OCBase/build/unitest/pidfile_test[1]_tests.cmake")
+  include("/mnt/c/Users/Pope_Guo/Desktop/miniob/OCBase/build/unitest/pidfile_test[1]_tests.cmake")
+else()
+  add_test(pidfile_test_NOT_BUILT pidfile_test_NOT_BUILT)
+endif()

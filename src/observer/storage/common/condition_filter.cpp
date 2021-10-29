@@ -112,7 +112,7 @@ RC DefaultConditionFilter::init(Table &table, const Condition &condition)
     right.attr_length = 0;
     right.attr_offset = 0;
   }
-  LOG_INFO("%d%d",type_left,type_right);
+  //LOG_INFO("%d%d",type_left,type_right);
   // 校验和转换
   //  if (!field_type_compare_compatible_table[type_left][type_right]) {
   //    // 不能比较的两个字段， 要把信息传给客户端
@@ -148,8 +148,7 @@ bool DefaultConditionFilter::filter(const Record &rec) const
   int cmp_result = 0;
   switch (attr_type_) {
     case DATES: {
-      cmp_result = check_trans::compare_date(left_value,right_value);
-      
+      cmp_result = check_trans::compare_date(left_value, right_value);
       break;
     }
     case CHARS: {  // 字符串都是定长的，直接比较

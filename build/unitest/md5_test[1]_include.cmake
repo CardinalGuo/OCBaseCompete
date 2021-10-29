@@ -1,0 +1,5 @@
+if(EXISTS "/mnt/c/Users/Pope_Guo/Desktop/miniob/OCBase/build/unitest/md5_test[1]_tests.cmake")
+  include("/mnt/c/Users/Pope_Guo/Desktop/miniob/OCBase/build/unitest/md5_test[1]_tests.cmake")
+else()
+  add_test(md5_test_NOT_BUILT md5_test_NOT_BUILT)
+endif()

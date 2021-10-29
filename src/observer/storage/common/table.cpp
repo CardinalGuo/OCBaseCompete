@@ -259,6 +259,36 @@ RC Table::insert_record(Trx *trx, Record *record) {
   }
   return rc;
 }
+RC Table::insert_record(Trx *trx,size_t record_num, const size_t value_num[], const Value values[][MAX_NUM]) {
+
+  for (size_t i = 0; i < record_num;i++){
+    if (value_num[i] <= 0 || nullptr == values[i] ){
+      LOG_ERROR("Invalid argument. value num=%d, values=%p", value_num, values);
+      return RC::INVALID_ARGUMENT;
+    }
+  }
+
+  char *record_data[record_num];
+  for (size_t i = 0; i < record_num;i++){
+    RC rc = make_record(value_num[i], values[i], record_data[i]);
+    if (rc != RC::SUCCESS) {
+      LOG_ERROR("Failed to create a record. rc=%d:%s", rc, strrc(rc));
+      return rc;
+    }
+  }
+
+  //无法处理
+  for (size_t i = 0; i < record_num;i++){
+    Record record;
+    record.data = record_data[i];
+    RC rc = insert_record(trx, &record);
+    delete[] record_data[i];
+    if (rc != RC::SUCCESS) return RC::INVALID_ARGUMENT;
+  }
+
+  return RC::SUCCESS;
+}
+
 RC Table::insert_record(Trx *trx, int value_num, const Value *values) {
   if (value_num <= 0 || nullptr == values ) {
     LOG_ERROR("Invalid argument. value num=%d, values=%p", value_num, values);
@@ -569,6 +599,47 @@ RC Table::create_index(Trx *trx, const char *index_name, const char *attribute_n
 // RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value, int condition_num, const Condition conditions[], int *updated_count) {
 //   return RC::GENERIC_ERROR;
 // }
+RC Table::update_check(int condition_num, const Condition *conditions){
+  for (int i = 0; i < condition_num; i++){
+    AttrType tp_left = UNDEFINED, tp_right = UNDEFINED;
+    if (conditions[i].left_is_attr) {
+      const FieldMeta* fieldmeta = this->table_meta().field(conditions[i].left_attr.attribute_name);
+      if (fieldmeta != nullptr){
+        LOG_INFO("%s",fieldmeta->name());
+        tp_left = fieldmeta->type();
+      }
+    }else{
+      tp_left = conditions[i].left_value.type;
+    }
+
+    if (conditions[i].right_is_attr) {
+      const FieldMeta* fieldmeta = this->table_meta().field(conditions[i].right_attr.attribute_name);
+      if (fieldmeta != nullptr){
+        LOG_INFO("%s",fieldmeta->name());
+        tp_right = fieldmeta->type();
+      }
+    }else{
+      tp_right = conditions[i].right_value.type;
+    }
+    
+    if ((tp_left == DATES) && !conditions[i].right_is_attr){
+    //LOG_INFO("%d",tp_left);
+      if(!check_trans::check_date( (char *)conditions[i].right_value.data)) return RC::INVALID_ARGUMENT;
+    }
+    if ((tp_right == DATES) && !conditions[i].left_is_attr){
+      //LOG_INFO("%d",tp_right);
+      if(!check_trans::check_date( (char *)conditions[i].left_value.data)) return RC::INVALID_ARGUMENT;
+    }
+
+    if (tp_left == UNDEFINED && tp_right == UNDEFINED) return RC::INVALID_ARGUMENT;
+
+    if ((tp_left == CHARS && tp_right == DATES )|| (tp_left == DATES && tp_right == CHARS)) continue;
+
+    if(tp_left != tp_right) return RC::INVALID_ARGUMENT;
+  }
+  return RC::SUCCESS;
+}
+
 RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value, int condition_num, const Condition conditions[], int *updated_count) {
   int flag = 0;
   if (const auto& i = table_meta_.field(attribute_name)) {
@@ -581,6 +652,10 @@ RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value
 
   if (condition_num < 0)
     return RC::INVALID_ARGUMENT;
+
+  RC rc_check = update_check(condition_num,conditions);
+  if (rc_check != RC::SUCCESS ) return RC::INVALID_ARGUMENT;
+
   CompositeConditionFilter filter_val; 
   filter_val.init(*this, conditions, condition_num);
   CompositeConditionFilter *filter = &filter_val;
@@ -597,10 +672,11 @@ RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value
   FieldMeta f = *this->table_meta().field(attribute_name);
   memcpy(record->data + f.offset(), value->data, sizeof(value->type));
   RC rc = record_handler_->update_record(record);
-   //更新索引                                                                                                                  2021/10/26 14:12
-  // Index *i = this->find_index(attribute_name);
-  // if(i != nullptr){
-  //   i->insert_entry((const char*)value->data, &record->rid);
+  //  更新索引                                                                                                                  2021/10/26 14:12
+  Index *i = this->find_index(attribute_name);
+  if(i != nullptr){
+    i->insert_entry((const char*)value->data, &record->rid);
+  }
   return rc;
 }
 
