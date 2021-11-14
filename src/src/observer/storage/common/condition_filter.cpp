@@ -125,7 +125,7 @@ RC DefaultConditionFilter::init(Table &table, const Condition &condition)
       return RC::SCHEMA_FIELD_TYPE_MISMATCH;
   }
 
-  return init(left, right, type_left, condition.comp);
+  return init(left, right, (type_left == DATES || type_right == DATES) ? DATES : type_left , condition.comp);
 }
 
 bool DefaultConditionFilter::filter(const Record &rec) const

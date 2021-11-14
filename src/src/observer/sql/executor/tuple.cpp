@@ -89,10 +89,23 @@ void TupleSchema::add(AttrType type, const char *table_name, const char *field_n
   fields_.emplace_back(type, table_name, field_name);
 }
 
+bool TupleSchema::add_if_not_exists_return(AttrType type, const char *table_name, const char *field_name, const char *calcu_name) {
+  
 
+  for (const auto &field: fields_) {
+    if (0 == strcmp(field.table_name(), table_name) &&
+        0 == strcmp(field.field_name(), field_name) &&
+        0 == strcmp(field.calcu_name(), calcu_name)) {
+      return false;
+    }
+  }
+  
+  add(type, table_name, field_name, calcu_name);
+  return true;
+}
 
 void TupleSchema::add_if_not_exists(AttrType type, const char *table_name, const char *field_name, const char *calcu_name) {
-  LOG_INFO("%s %s %s",table_name,field_name,calcu_name);
+  
 
   for (const auto &field: fields_) {
     if (0 == strcmp(field.table_name(), table_name) &&

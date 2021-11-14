@@ -353,7 +353,13 @@ RC Table::make_record(int value_num, const Value *values, char * &record_out) {
   for (int i = 0; i < value_num; i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value &value = values[i];
-    memcpy(record + field->offset(), value.data, field->len());
+    if (field->type() == DATES){
+      int num = check_trans::date_to_num(value.data);
+      memcpy(record + field->offset(), &num, field->len());
+    }else{
+      memcpy(record + field->offset(), value.data, field->len());
+    }
+    
   }
 
   record_out = record;
@@ -411,7 +417,37 @@ RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *contex
   RecordReaderScanAdapter adapter(record_reader, context);
   return scan_record(trx, filter, limit, (void *)&adapter, scan_record_reader_adapter);
 }
+RC Table::scan_record_string(Trx *trx, std::vector<char *> &vector_records){
+  RecordFileScanner scanner;
+  RC rc = RC::SUCCESS;
+  rc = scanner.open_scan(*data_buffer_pool_, file_id_, nullptr);
+  if (rc != RC::SUCCESS) {
+    LOG_ERROR("failed to open scanner. file id=%d. rc=%d:%s", file_id_, rc, strrc(rc));
+    return rc;
+  }
+  int limit = INT_MAX;
+  int record_count = 0;
+  Record record;
+  rc = scanner.get_first_record(&record);
+  
+  for ( ; RC::SUCCESS == rc && record_count < limit; rc = scanner.get_next_record(&record)) {
+    if (trx == nullptr || trx->is_visible(this, &record)) {
+      std::string rec_str;
+      //memcpy(rec_str, record.data);
+      // LOG_INFO("%d %d",*(record.data + 0),*(record.data + 4));
+      // LOG_INFO("%d", strlen(record.data));
+      // std::string cop = record.data;
+      // LOG_INFO("%d", cop.length());
+      vector_records.push_back((char *)record.data);
+      if (rc != RC::SUCCESS) {
+        break;
+      }
+      record_count++;
+    }
+  }
 
+  return rc;
+}
 RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *context, RC (*record_reader)(Record *record, void *context)) {
   if (nullptr == record_reader) {
     return RC::INVALID_ARGUMENT;

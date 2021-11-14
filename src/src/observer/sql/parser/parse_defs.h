@@ -38,6 +38,8 @@ typedef enum {
   LESS_THAN,    //"<"     3
   GREAT_EQUAL,  //">="    4
   GREAT_THAN,   //">"     5
+  ATTR_IN,      // in       6
+  ATTR_NOT_IN,  //  not in      7   
   NO_OP
 } CompOp;
 
@@ -46,7 +48,7 @@ struct DATES {
 };
 
 //属性值类型
-typedef enum { UNDEFINED, CHARS, INTS, FLOATS ,DATES} AttrType;
+typedef enum { UNDEFINED, CHARS, INTS, FLOATS ,DATES, NULL_TYPE} AttrType;
 
 //属性值
 typedef struct _Value {
@@ -66,14 +68,76 @@ typedef struct _Condition {
   Value right_value;   // right-hand side value if right_is_attr = FALSE
 } Condition;
 
-// struct of select
 typedef struct {
   size_t    attr_num;               // Length of attrs in Select clause
-  RelAttr   attributes[MAX_NUM];    // attrs in Select clause
-  size_t    relation_num;           // Length of relations in Fro clause
-  char *    relations[MAX_NUM];     // relations in From clause
+  RelAttr   attributes[10];    // attrs in Select clause
+} GroupBy;
+
+typedef struct {
+  size_t    attr_num;               // Length of attrs in Select clause
+  RelAttr   attributes[10];    // attrs in Select clause
+  int    up_or_down[10];
+} OrderBy;
+
+
+
+
+// // struct of select
+// typedef struct {
+//   size_t    attr_num;               // Length of attrs in Select clause
+//   RelAttr   attributes[MAX_NUM];    // attrs in Select clause
+//   size_t    relation_num;           // Length of relations in Fro clause
+//   char *    relations[MAX_NUM];     // relations in From clause
+//   size_t    condition_num;          // Length of conditions in Where clause
+//   Condition conditions[MAX_NUM];    // conditions in Where clause
+// } Selects;
+
+//SELECTEXP   ID, COUNT(ID), ID DOT ID, COUNT(ID DOT ID), (RES) +-*/ (RES)
+
+typedef enum {NONEOPERATOR, CAL_ADD, CAL_SUB, CAL_MUL, CAL_DIV, CAL_COUNT, CAL_MAX, CAL_MIN, CAL_AVG, CAL_IDEO} Calculate;
+
+typedef struct _Expression{
+  Calculate calculate;
+  int is_attr; //1 时是属性
+  int is_leaf;  //
+  Value value;
+  RelAttr attr;
+  struct _Expression *left; //if exist
+  struct _Expression *right; //if exist
+} Expression;
+
+
+
+
+typedef struct _Condition_Composite {
+  Expression *left;
+  CompOp comp;         // comparison operator
+  Expression *right;
+  void *select_attr_in;
+} Condition_Composite;
+
+typedef struct {
+  char *    relation_name;
   size_t    condition_num;          // Length of conditions in Where clause
-  Condition conditions[MAX_NUM];    // conditions in Where clause
+  Condition_Composite *conditions[10];    // conditions in Where clause
+} JoinOn;
+
+typedef struct _Selects{
+  size_t    relation_num;           // Length of relations in Fro clause
+  char *    relations[10];     // relations in From clause
+  
+  size_t    expression_select_num;
+  Expression *expression_select[10];
+  
+  size_t    condition_num;
+  Condition_Composite *conditions[10];
+  
+  size_t join_num;
+  size_t join_tmp;
+  JoinOn join_on[10];
+  size_t join_num_max;
+  GroupBy group_by;
+  OrderBy order_by;
 } Selects;
 
 // struct of insert
@@ -142,7 +206,8 @@ typedef struct {
 } LoadData;
 
 union Queries {
-  Selects selection;
+  
+  Selects selection[10];
   Inserts insertion;
   Deletes deletion;
   Updates update;
@@ -189,12 +254,23 @@ extern "C" {
 void relation_attr_init_extra(RelAttr *relation_attr, const char *relation_name, const char *attribute_name, const char *attribute_name_extra);
 void relation_attr_init(RelAttr *relation_attr, const char *relation_name, const char *attribute_name);
 void relation_attr_destroy(RelAttr *relation_attr);
-
+void show_select_num(int num);
+Expression* select_expression_copy(Expression *expression);
+void expression_init_node(Expression *expression, Expression *expression_left, Expression *expression_right, Calculate cal_tmp);
+void show_expression(Expression *expression);
+void expression_init_leaf(Expression *expression, Value *value);
+void expression_init_leaf_attr(Expression *expression, RelAttr *attr);
+void show_condition(Condition_Composite *con);
+void show_selects(Selects select);
 void record_init_from_values(Value *record, Value *values, size_t length);
 void value_init_integer(Value *value, int v);
+void value_init_NULL(Value *value, const char *v);
 void value_init_float(Value *value, float v);
 void value_init_string(Value *value, const char *v);
 void value_destroy(Value *value);
+
+void condition_exp_select_init(Condition_Composite *condition_composite, Expression *left, Selects *select_right, CompOp cp);
+void condition_exp_exp_init(Condition_Composite *condition_composite, Expression *left, Expression *right, CompOp cp);
 
 void condition_init(Condition *condition, CompOp comp, int left_is_attr, RelAttr *left_attr, Value *left_value,
     int right_is_attr, RelAttr *right_attr, Value *right_value);
@@ -203,15 +279,30 @@ void condition_destroy(Condition *condition);
 void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t length);
 void attr_info_destroy(AttrInfo *attr_info);
 
-void selects_init(Selects *selects, ...);
-void selects_append_attribute(Selects *selects, RelAttr *rel_attr);
+
+void group_by_append_relattr(GroupBy *g,const char *relName,const char *attrName);
+void order_by_append_relattr(OrderBy *o,const char *relName,const char *attrName,const int order);
+// void selects_init(Selects *selects, ...);
+void selects_append_attribute(Selects *selects, Expression *expression);
 void selects_append_relation(Selects *selects, const char *relation_name);
-void selects_append_conditions(Selects *selects, Condition conditions[], size_t condition_num);
-void selects_destroy(Selects *selects);
+void select_append_condition(Selects *selects, Condition_Composite *condition);
+// void selects_append_conditions(Selects *selects, Condition conditions[], size_t condition_num);
+// void selects_destroy(Selects *selects);
+void select_join_append_condition(Selects *select, Condition_Composite *condition);
+void select_join_append_relation(Selects *select, const char *attribute_name);
+void select_join_num_change(Selects *select,int num);
+
 
 void inserts_record_init(Inserts *inserts, const char *relation_name, Value values[][MAX_NUM], size_t record_num, size_t value_nums[]);
 void inserts_init(Inserts *inserts, const char *relation_name, Value values[], size_t value_num);
 void inserts_destroy(Inserts *inserts);
+
+void complex_condition_destroy(Condition_Composite *condition);
+void expression_destroy(Expression *expression);
+void join_destroy(JoinOn *joinon);
+void group_destroy(GroupBy *groupby);
+void order_destroy(OrderBy *orderby);
+void selects_destroy(Selects *selects);
 
 
 

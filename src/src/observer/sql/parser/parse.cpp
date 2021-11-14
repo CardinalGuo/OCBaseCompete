@@ -23,6 +23,44 @@ RC parse(char *st, Query *sqln);
 extern "C" {
 #endif // __cplusplus
 
+void expression_init_node(Expression *expression, Expression *expression_left, Expression *expression_right, Calculate cal_tmp){
+  expression->left = expression_left;
+  if (expression_right != NULL) {
+    expression->right = expression_right;
+  }else{
+    expression->right = nullptr;
+  }
+  expression->is_leaf = 0;
+  expression->calculate = cal_tmp;
+  //LOG_INFO("exp node init address = %d ", expression);
+}
+void show_condition(Condition_Composite *condition){
+  if (condition->left != nullptr) show_expression(condition->left);
+  LOG_INFO("%d" , condition->comp);
+  if (condition->right != nullptr) show_expression(condition->right);
+  if (condition->select_attr_in != nullptr) show_selects(*(Selects*)condition->select_attr_in);
+}
+
+void show_select_num(int num){
+  LOG_INFO("show select num %d",num);
+}
+
+
+void expression_init_leaf(Expression *expression, Value *value){
+  expression->value = *value;
+  expression->is_leaf = 1;
+  expression->is_attr = 0;
+  //LOG_INFO("exp node init address = %d value type %d", expression, expression->value->type);
+}
+void expression_init_leaf_attr(Expression *expression, RelAttr *attr){
+  expression->attr = *attr;
+  expression->is_leaf = 1;
+  expression->is_attr = 1;
+}
+
+
+
+
 void relation_attr_init_extra(RelAttr *relation_attr, const char *relation_name, const char *attribute_name, const char *attribute_name_extra) {
   if (relation_name != nullptr) {
     relation_attr->relation_name = strdup(relation_name);
@@ -53,7 +91,7 @@ void relation_attr_destroy(RelAttr *relation_attr) {
 void record_init_from_values(Value record[], Value values[], size_t length){
   for (size_t i = 0; i < length; i++)
   {
-    record[i] = std::move(values[i]);
+    record[i] = values[i];
   }
 }
 void value_init_integer(Value *value, int v) {
@@ -61,6 +99,12 @@ void value_init_integer(Value *value, int v) {
   value->data = malloc(sizeof(v));
   memcpy(value->data, &v, sizeof(v));
 }
+
+void value_init_NULL(Value *value, const char * v) {
+  value->type = NULL_TYPE;
+  value->data = strdup(v);
+}
+
 void value_init_float(Value *value, float v) {
   value->type = FLOATS;
   value->data = malloc(sizeof(v));
@@ -73,10 +117,25 @@ void value_init_string(Value *value, const char *v) {
   value->data = strdup(v);
   //LOG_ERROR("here %s",(value->data));
 }
+
+
 void value_destroy(Value *value) {
   value->type = UNDEFINED;
   free(value->data);
   value->data = nullptr;
+}
+
+void condition_exp_exp_init(Condition_Composite *condition_composite, Expression *left, Expression *right, CompOp cp){
+  condition_composite->left = left;
+  condition_composite->right = right;
+  condition_composite->select_attr_in = nullptr;
+  condition_composite->comp = cp;
+}
+void condition_exp_select_init(Condition_Composite *condition_composite, Expression *left, Selects *select_right, CompOp cp){
+  condition_composite->left = left;
+  condition_composite->right = nullptr;
+  condition_composite->select_attr_in = (void*)select_right;
+  condition_composite->comp = cp;
 }
 
 void condition_init(Condition *condition, CompOp comp, 
@@ -109,7 +168,17 @@ void condition_destroy(Condition *condition) {
     value_destroy(&condition->right_value);
   }
 }
-
+void complex_condition_destroy(Condition_Composite *condition){
+  if (condition->left != nullptr) expression_destroy(condition->left);
+  if (condition->right != nullptr) expression_destroy(condition->right);
+  if (condition->select_attr_in != nullptr) {
+    selects_destroy((Selects *)condition->select_attr_in);
+  }
+  condition->left = nullptr;
+  condition->right = nullptr;
+  condition->select_attr_in = nullptr;
+  free(condition);
+}
 void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t length) {
   attr_info->name = strdup(name);
   attr_info->type = type;
@@ -120,28 +189,233 @@ void attr_info_destroy(AttrInfo *attr_info) {
   attr_info->name = nullptr;
 }
 
-void selects_init(Selects *selects, ...);
-void selects_append_attribute(Selects *selects, RelAttr *rel_attr) {
-  selects->attributes[selects->attr_num++] = *rel_attr;
-  LOG_INFO("hhhhh %s%s%s ",rel_attr->relation_name,rel_attr->extra_attribute_name,rel_attr->attribute_name);
+void group_by_append_relattr(GroupBy *g,const char *relName,const char *attrName){
+  if (relName != NULL){
+    g->attributes[g->attr_num].relation_name = strdup(relName);
+  }else{
+    g->attributes[g->attr_num].relation_name = nullptr;
+  }
+  g->attributes[g->attr_num++].attribute_name = strdup(attrName);
+}
+
+void order_by_append_relattr(OrderBy *o,const char *relName,const char *attrName,const int order){
+  o->up_or_down[o->attr_num] = order;
+  if (relName != NULL){
+    o->attributes[o->attr_num].relation_name = strdup(relName);
+  }else{
+     o->attributes[o->attr_num].relation_name = nullptr;
+  }
+  o->attributes[o->attr_num++].attribute_name = strdup(attrName);
+}
+
+void cal(Expression *expression){
+  if (expression == nullptr){
+    return ;
+  }
+  if (expression->is_leaf) {
+    if (expression->is_attr) {
+      if (expression->attr.relation_name != nullptr){
+      LOG_INFO("rel %s",expression->attr.relation_name);
+      }
+      if (expression->attr.attribute_name){
+      LOG_INFO("attr %s",expression->attr.attribute_name);
+      }
+      
+    }
+    else LOG_INFO(" %d ", *(int*)expression->value.data);
+    return ;
+  }
+  //LOG_INFO("calleft");
+  if (expression->left != nullptr) cal(expression->left);
+  
+  if (expression->right != nullptr) cal(expression->right);
+  return ;
+}
+void show_expression(Expression *expression){
+  if(expression != nullptr)cal(expression);
+}
+
+void show_order(RelAttr relattr, int up_or_down){
+  if (relattr.relation_name != nullptr) LOG_INFO("order_rel %s",relattr.relation_name);
+  LOG_INFO("order_attr %s   %d",relattr.attribute_name,up_or_down);
+}
+void show_group(RelAttr relattr){
+  if (relattr.relation_name != nullptr) LOG_INFO("group_rel %s",relattr.relation_name);
+  LOG_INFO("group_attr %s",relattr.attribute_name);
+}
+void show_join(JoinOn joinon){
+  LOG_INFO("%s", joinon.relation_name);
+  LOG_INFO("show join on condition");
+  for (size_t i = 0;i < joinon.condition_num;i++){
+    show_condition(joinon.conditions[i]);
+  }
+}
+void show_selects(Selects selects){
+    LOG_INFO("show select_exp");
+  for (size_t i = 0;i < selects.expression_select_num;i++){
+    LOG_INFO("show %d", selects.expression_select_num);
+    show_expression(selects.expression_select[i]);
+  }
+  
+  LOG_INFO("show tables");
+  for (size_t i = 0;i < selects.relation_num;i++){
+    LOG_INFO("%s",selects.relations[i]);
+  } 
+  
+  LOG_INFO("show join");
+  for (size_t i = 0;i <= selects.join_num;i++){
+    LOG_INFO("%d",selects.join_num);
+    show_join(selects.join_on[i]);
+  } 
+
+  LOG_INFO("show condition");
+  for (size_t i = 0;i < selects.condition_num;i++){
+    LOG_INFO("show %d", selects.condition_num);
+    show_condition(selects.conditions[i]);
+  }
+
+  LOG_INFO("show group");
+  for (size_t i = 0;i < selects.group_by.attr_num;i++){
+    LOG_INFO("show %d", selects.group_by.attr_num);
+    show_group(selects.group_by.attributes[i]);
+  }
+
+  LOG_INFO("show order");
+  for (size_t i = 0;i < selects.order_by.attr_num;i++){
+    LOG_INFO("show %d", selects.order_by.attr_num);
+    show_order(selects.order_by.attributes[i],selects.order_by.up_or_down[i]);
+  }
+}
+
+Expression *select_expression_copy(Expression *expression){
+  
+  Expression *expression_select = (Expression *)malloc(sizeof(Expression));
+
+  expression_select->is_leaf = expression->is_leaf;
+  expression_select->is_attr = expression->is_attr;
+
+  if (!expression->is_leaf) {
+    expression_select->calculate = expression->calculate;
+    if (expression->left != nullptr) {
+      expression_select->left = select_expression_copy(expression->left);
+    }else{
+      expression_select->left = nullptr;
+    }
+    if (expression->right != nullptr) {
+      expression_select->right = select_expression_copy(expression->right);  
+    }else{
+      expression_select->right = nullptr;
+    }
+  }else{
+    if (expression->is_attr) {
+        expression_select->attr = expression->attr;
+      //LOG_INFO("%s",expression_select->attr.attribute_name);
+    }else{
+      expression_select->value = expression->value;
+      //LOG_INFO(" %d %d", expression->value->type, expression_select->value->type);
+    }
+  }
+  return expression_select;
+}
+Condition_Composite *select_condition_copy(Condition_Composite *condition){
+  Condition_Composite *condition_select = (Condition_Composite *)malloc(sizeof(Condition_Composite));
+  condition_select->comp = condition->comp;
+  if (condition->left != nullptr) condition_select->left = select_expression_copy(condition->left);
+  else condition_select->left = nullptr;
+  if (condition->right != nullptr) condition_select->right = select_expression_copy(condition->right);
+  else condition_select->right = nullptr;
+  if (condition->select_attr_in != nullptr) condition_select->select_attr_in = condition->select_attr_in;
+  else condition_select->select_attr_in = nullptr;
+  return condition_select;
+}
+// void selects_init(Selects *selects, ...);
+void selects_append_attribute(Selects *selects, Expression *expression) {
+  //LOG_INFO("%d",selects->expression_select_num);
+  selects->expression_select[selects->expression_select_num++] = select_expression_copy(expression);
+  // LOG_INFO("hhhhh %s%s%s ",rel_attr->relation_name,rel_attr->extra_attribute_name,rel_attr->attribute_name);
 }
 void selects_append_relation(Selects *selects, const char *relation_name) {
   selects->relations[selects->relation_num++] = strdup(relation_name);
 }
 
-void selects_append_conditions(Selects *selects, Condition conditions[], size_t condition_num) {
-  assert(condition_num <= sizeof(selects->conditions)/sizeof(selects->conditions[0]));
-  for (size_t i = 0; i < condition_num; i++) {
-    selects->conditions[i] = conditions[i];
+void select_append_condition(Selects *selects, Condition_Composite *condition){
+  selects->conditions[selects->condition_num++] = select_condition_copy(condition);
+}
+
+void select_join_append_condition(Selects *select, Condition_Composite *condition){
+  JoinOn *joinon = &select->join_on[select->join_tmp];
+  joinon->conditions[joinon->condition_num++] = select_condition_copy(condition);
+}
+void select_join_append_relation(Selects *select, const char *relation_name){
+  select->join_num_max++;
+  select->join_on[select->join_tmp].relation_name = strdup(relation_name);
+  //LOG_INFO("%d  %s",select->join_tmp, select->join_on[select->join_tmp].relation_name);
+}
+void select_join_num_change(Selects *select,int num){
+  if (num == 0) {
+    select->join_tmp--;
   }
-  selects->condition_num = condition_num;
+  else {
+    select->join_num++;
+    select->join_tmp = select->join_num;
+  }
+}
+
+// void selects_append_conditions(Selects *selects, Condition conditions[], size_t condition_num) {
+//   // assert(condition_num <= sizeof(selects->conditions)/sizeof(selects->conditions[0]));
+//   // for (size_t i = 0; i < condition_num; i++) {
+//   //   selects->conditions[i] = conditions[i];
+//   // }
+//   // selects->condition_num = condition_num;
+// }
+void expression_destroy(Expression *expression){
+  expression->calculate = CAL_IDEO;
+  if (expression->is_leaf){
+    if (expression->is_attr){
+      relation_attr_destroy(&expression->attr);
+    }else{
+      value_destroy(&expression->value);
+    }
+  }else{
+    if (expression->left != nullptr) expression_destroy(expression->left);
+    if (expression->right != nullptr) expression_destroy(expression->right);
+  }
+  expression->left = nullptr;
+  expression->right = nullptr;
+  expression->is_leaf = 0;
+  expression->is_attr = 0;
+  free(expression);
+}
+
+void join_destroy(JoinOn *joinon){
+  free(joinon->relation_name);
+  joinon->relation_name = nullptr;
+  for (size_t i = 0;i < joinon->condition_num;i++){
+    complex_condition_destroy(joinon->conditions[i]);
+  }
+}
+
+void group_destroy(GroupBy *groupby){
+  for (size_t i = 0;i < groupby->attr_num ;i++){
+    relation_attr_destroy(&groupby->attributes[i]);
+  }
+  groupby->attr_num = 0;
+}
+
+void order_destroy(OrderBy *orderby){
+  for (size_t i = 0;i < orderby->attr_num ;i++){
+    relation_attr_destroy(&orderby->attributes[i]);
+  }
+  orderby->attr_num = 0;
 }
 
 void selects_destroy(Selects *selects) {
-  for (size_t i = 0; i < selects->attr_num; i++) {
-    relation_attr_destroy(&selects->attributes[i]);
+  LOG_INFO("doing destroy");
+  for (size_t i = 0; i < selects->expression_select_num; i++) {
+    LOG_INFO("doing destroy");
+    expression_destroy(selects->expression_select[i]);
   }
-  selects->attr_num = 0;
+  selects->expression_select_num = 0;
 
   for (size_t i = 0; i < selects->relation_num; i++) {
     free(selects->relations[i]);
@@ -149,10 +423,21 @@ void selects_destroy(Selects *selects) {
   }
   selects->relation_num = 0;
 
-  for (size_t i = 0; i < selects->condition_num; i++) {
-    condition_destroy(&selects->conditions[i]);
+  for (size_t i = 0; i < selects->join_num_max; i++)
+  {
+    join_destroy(&selects->join_on[i]);
   }
-  selects->condition_num = 0;
+  selects->join_num_max = 0;
+  selects->join_tmp = 0;
+  selects->join_num = 0;
+
+  for (size_t i = 0; i < selects->condition_num; i++) {
+    complex_condition_destroy(selects->conditions[i]);
+  }  
+  group_destroy(&selects->group_by);
+  order_destroy(&selects->order_by);
+  // selects->condition_num = 0;
+
 }
 
 void inserts_record_init(Inserts *inserts, const char *relation_name, Value values[][MAX_NUM], size_t record_num, size_t value_nums[]) {
@@ -337,7 +622,7 @@ Query *query_create() {
 void query_reset(Query *query) {
   switch (query->flag) {
     case SCF_SELECT: {
-      selects_destroy(&query->sstr.selection);
+      selects_destroy(&query->sstr.selection[0]);
     }
     break;
     case SCF_INSERT: {

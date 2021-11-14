@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/parser/parse.h"
 #include "rc.h"
 #include "storage/common/db.h"
+#include "sql/executor/tuple.h"
 
 class SessionEvent;
 
@@ -31,10 +32,13 @@ protected:
   // common function
   ExecuteStage(const char *tag);
   bool set_properties() override;
-  RC check_select(const Selects selects, const char *db);
+  RC check_select(const Selects selects, Db *datebase);
   RC check_table_valid(const Selects selects, Db *db);
   RC check_attri_valid(RelAttr attr, Selects selects, Db *db);
-  RC check_condition_valid(Condition condition, Selects selects, Db *db);
+  RC check_aggrevage_valid(RelAttr attr, Selects selects, Db *db);
+  RC check_condition_valid(Condition_Composite *condition, std::unordered_map<std::string, AttrType> &field_set, Db *datebase);
+  RC check_join(std::unordered_map<std::string, AttrType> field_set,const JoinOn *joinon, Db *datebase);
+  TupleSet combain_by_condition(int sets_size, std::vector<TupleSet> &tuplesets, const Selects selects);
   RC check_condition_value_equal(Condition condition,char *relations[MAX_NUM], size_t relation_num, Db *db);
   bool initialize() override;
   void cleanup() override;

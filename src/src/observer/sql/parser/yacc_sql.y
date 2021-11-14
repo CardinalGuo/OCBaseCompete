@@ -25,6 +25,21 @@ typedef struct ParserContext {
   Condition conditions[MAX_NUM];
   CompOp comp;
 	char id[MAX_NUM];
+    
+    
+  size_t select_num;
+  
+  size_t select_max;
+  size_t select_stack[MAX_NUM];
+  size_t select_stack_index;
+  
+  size_t condition_total_num;
+    //size_t condition_composite_num[MAX_NUM];
+  Condition_Composite condition_composites[MAX_NUM];
+  
+  Expression exp_array[MAX_NUM * 2];
+  size_t exp_num;
+  
 } ParserContext;
 
 //获取子串
@@ -48,6 +63,7 @@ void yyerror(yyscan_t scanner, const char *str)
   context->from_length = 0;
   context->select_length = 0;
   context->value_length = 0;
+  context->exp_num = 0;
   context->ssql->sstr.insertion.value_num = 0;
   context->ssql->sstr.errors = "parse failed";
   printf("parse sql failed. error=%s", str);
@@ -61,10 +77,22 @@ ParserContext *get_context(yyscan_t scanner)
 #define CONTEXT get_context(scanner)
 
 %}
+%left EQ
+%left NE
+%left LT
+%left GT
+%left GE
+%left LE 
+
+%left ADD
+%left SUB
+%left STAR
+%left DIV
 
 %define api.pure full
 %lex-param { yyscan_t scanner }
 %parse-param { void *scanner }
+
 
 //标识tokens
 %token  SEMICOLON
@@ -75,6 +103,7 @@ ParserContext *get_context(yyscan_t scanner)
         INDEX
         SELECT
         DESC
+        ASC
         SHOW
         SYNC
         INSERT
@@ -104,10 +133,20 @@ ParserContext *get_context(yyscan_t scanner)
         DATA
         NULLABLE
         NULLL
+        INNER
+        JOIN
+        GROUP
+        ORDER
+        BY
         MAX
         MIN
         AVG
+        ADD
+        DIV
+        SUB
         COUNT
+        IN
+        NOT
         INFILE
         EQ
         LT
@@ -120,8 +159,12 @@ ParserContext *get_context(yyscan_t scanner)
   struct _Attr *attr;
   struct _Condition *condition1;
   struct _Value *value1;
+  struct _Condition_Composite *Condition_Composite1;
+  struct _Selects *selects1;
+  struct _Expression *expression1;
   char *string;
   int number;
+  int comOp;
   float floats;
 	char *position;
 }
@@ -135,10 +178,14 @@ ParserContext *get_context(yyscan_t scanner)
 %token <string> STRING_V
 //非终结符
 
+%type <comOp> comOp
 %type <number> type;
-%type <condition1> condition;
+//%type <condition1> condition;
 %type <value1> value;
 %type <number> number;
+%type <selects1> select_main;
+%type <Condition_Composite1> condition;
+%type <expression1> expression;
 
 %%
 
@@ -265,7 +312,7 @@ attr_def:
     |ID_get type
 		{
 			AttrInfo attribute;
-			attr_info_init(&attribute, CONTEXT->id, $2, 16);
+			attr_info_init(&attribute, CONTEXT->id, $2, 4);
 			create_table_append_attribute(&CONTEXT->ssql->sstr.create_table, &attribute);
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name=(char*)malloc(sizeof(char));
 			// strcpy(CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name, CONTEXT->id); 
@@ -337,10 +384,13 @@ value:
 			$1 = substr($1,1,strlen($1)-2);
   		value_init_string(&CONTEXT->values[CONTEXT->value_length++], $1);
 		}
+    |NULLL{
+        value_init_NULL(&CONTEXT->values[CONTEXT->value_length++], "GAY");
+    }
     ;
     
 delete:		/*  delete 语句的语法解析树*/
-    DELETE FROM ID where SEMICOLON 
+    DELETE FROM ID where_old SEMICOLON 
 		{
 			CONTEXT->ssql->flag = SCF_DELETE;//"delete";
 			deletes_init_relation(&CONTEXT->ssql->sstr.deletion, $3);
@@ -350,7 +400,7 @@ delete:		/*  delete 语句的语法解析树*/
     }
     ;
 update:			/*  update 语句的语法解析树*/
-    UPDATE ID SET ID EQ value where SEMICOLON
+    UPDATE ID SET ID EQ value where_old SEMICOLON
 		{
 			CONTEXT->ssql->flag = SCF_UPDATE;//"update";
 			Value *value = &CONTEXT->values[0];
@@ -359,111 +409,19 @@ update:			/*  update 语句的语法解析树*/
 			CONTEXT->condition_length = 0;
 		}
     ;
-select:				/*  select 语句的语法解析树*/
-    SELECT select_attr select_list FROM ID rel_list where SEMICOLON
-		{
-			// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
-			selects_append_relation(&CONTEXT->ssql->sstr.selection, $5);
-
-			selects_append_conditions(&CONTEXT->ssql->sstr.selection, CONTEXT->conditions, CONTEXT->condition_length);
-
-			CONTEXT->ssql->flag=SCF_SELECT;//"select";
-			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
-
-			//临时变量清零
-			CONTEXT->condition_length=0;
-			CONTEXT->from_length=0;
-			CONTEXT->select_length=0;
-			CONTEXT->value_length = 0;
-        }
-	;
-select_attr:
-    MAX LBRACE ID RBRACE {
-        RelAttr attr;
-        relation_attr_init_extra(&attr, NULL, $3, "MAX");
-        selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-        }
-    | MAX LBRACE ID DOT ID RBRACE {
-        RelAttr attr;
-        relation_attr_init_extra(&attr, $3, $5, "MAX");
-        selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-        }
-    | MIN LBRACE ID RBRACE {
-        RelAttr attr;
-        relation_attr_init_extra(&attr, NULL, $3, "MIN");
-        selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-        }
-    | MIN LBRACE ID DOT ID RBRACE {
-        RelAttr attr;
-        relation_attr_init_extra(&attr, $3, $5, "MIN");
-        selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-        }
-    | COUNT LBRACE ID RBRACE {
-        RelAttr attr;
-        relation_attr_init_extra(&attr, NULL, $3, "COUNT");
-        selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-        }
-    | COUNT LBRACE ID DOT ID RBRACE {
-        RelAttr attr;
-        relation_attr_init_extra(&attr, $3, $5, "COUNT");
-        selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-        }
-    | COUNT LBRACE STAR RBRACE {
-        RelAttr attr;
-        relation_attr_init_extra(&attr, NULL, "__trx", "COUNT");
-        selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-        }
-    | AVG LBRACE ID RBRACE {
-        RelAttr attr;
-        relation_attr_init_extra(&attr, NULL, $3, "AVG");
-        selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-        }
-    | AVG LBRACE ID DOT ID RBRACE {
-        RelAttr attr;
-        relation_attr_init_extra(&attr, $3, $5, "AVG");
-        selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-        }
-    | STAR {  
-			RelAttr attr;
-			relation_attr_init_extra(&attr, NULL, "*", "IDEO");
-			selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-		}
-    |ID{
-        RelAttr attr;
-        relation_attr_init_extra(&attr, NULL, $1, "IDEO");
-        selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-    }
-    |ID DOT ID{
-        RelAttr attr;
-        relation_attr_init_extra(&attr, $1, $3, "IDEO");
-        selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-    }
-    ;
-select_list:  
-    | COMMA select_attr select_list {
-    
-        }
-    ;
-
-rel_list:
-    /* empty */
-    | COMMA ID rel_list {	
-				selects_append_relation(&CONTEXT->ssql->sstr.selection, $2);
-		  }
-    ;
-where:
+where_old:
     /* empty */ 
-    | WHERE condition condition_list {	
+    | WHERE condition_old condition_list_old {	
 				// CONTEXT->conditions[CONTEXT->condition_length++]=*$2;
 			}
     ;
-condition_list:
+condition_list_old:
     /* empty */
-    | AND condition condition_list {
+    | AND condition_old condition_list_old {
 				// CONTEXT->conditions[CONTEXT->condition_length++]=*$2;
 			}
     ;
-condition:
+condition_old:
     ID comOp value 
 		{
 			RelAttr left_attr;
@@ -609,14 +567,307 @@ condition:
 			// $$->right_attr.attribute_name=$7;
     }
     ;
+expression_list_add:
+    | COMMA expression expression_list_add
+    {
+        selects_append_attribute(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num], $2);
+    }
+    ;
+expression_list:
+    expression expression_list_add
+    {
+        selects_append_attribute(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num], $1);
+    }
+    ;
+expression:
+    ID DOT STAR {
+        RelAttr attr;
+        relation_attr_init(&attr, $1, "*");
+        Expression exp_leaf;
+        expression_init_leaf_attr(&exp_leaf, &attr);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_leaf;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+    }
+    | STAR {
+        RelAttr attr;
+        relation_attr_init(&attr, NULL, "*");
+        Expression exp_leaf;
+        expression_init_leaf_attr(&exp_leaf, &attr);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_leaf;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+    }
+    | ID{
+        RelAttr attr;
+        relation_attr_init(&attr, NULL, $1);
+        Expression exp_leaf;
+        expression_init_leaf_attr(&exp_leaf, &attr);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_leaf;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+    }
+    | ID DOT ID {
+        RelAttr attr;
+        relation_attr_init(&attr, $1, $3);
+        Expression exp_leaf;
+        expression_init_leaf_attr(&exp_leaf, &attr);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_leaf;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+    }
+    | NUMBER {
+        value_init_integer(&CONTEXT->values[CONTEXT->value_length++], $1);
+        Value *value = &CONTEXT->values[CONTEXT->value_length - 1];
+        Expression exp_leaf;
+        expression_init_leaf(&exp_leaf, value);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_leaf;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+    }
+    | FLOAT {
+        value_init_float(&CONTEXT->values[CONTEXT->value_length++], $1);
+        Value *value = &CONTEXT->values[CONTEXT->value_length - 1];
+        Expression exp_leaf;
+        expression_init_leaf(&exp_leaf, value);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_leaf;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+    }
+    | SSS {
+        $1 = substr($1,1,strlen($1)-2);
+        value_init_string(&CONTEXT->values[CONTEXT->value_length++], $1);
+        Value *value = &CONTEXT->values[CONTEXT->value_length - 1];
+        Expression exp_leaf;
+        expression_init_leaf(&exp_leaf, value);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_leaf;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+    }
+    | LBRACE expression RBRACE {
+    
+        $$ = $2;
+        //show_expression(&CONTEXT->exp_array[(CONTEXT->exp_num) - 1]);
+    }
+    | expression ADD expression{
+        Expression exp_node;
+        expression_init_node(&exp_node, $1, $3, CAL_ADD);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_node;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+        
+    }
+    | expression SUB expression{
+        Expression exp_node;
+        expression_init_node(&exp_node, $1, $3, CAL_SUB);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_node;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+        //show_expression(&CONTEXT->exp_array[(CONTEXT->exp_num) - 1]);
+    }
+    | expression STAR expression{
+        Expression exp_node;
+        expression_init_node(&exp_node, $1, $3, CAL_MUL);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_node;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+        //show_expression(&CONTEXT->exp_array[(CONTEXT->exp_num) - 1]);
+    }
+    | expression DIV expression{
+        Expression exp_node;
+        expression_init_node(&exp_node, $1, $3, CAL_DIV);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_node;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+        //show_expression(&CONTEXT->exp_array[(CONTEXT->exp_num) - 1]);
+    }
+    | COUNT LBRACE expression RBRACE{
+        Expression exp_node;
+        expression_init_node(&exp_node, $3, NULL, CAL_COUNT);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_node;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+        //show_expression(&CONTEXT->exp_array[(CONTEXT->exp_num) - 1]);
+    }
+    | MAX LBRACE expression RBRACE{
+        Expression exp_node;
+        expression_init_node(&exp_node, $3, NULL, CAL_MAX);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_node;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+        //show_expression(&CONTEXT->exp_array[(CONTEXT->exp_num) - 1]);
+    }
+    | MIN LBRACE expression RBRACE{
+        Expression exp_node;
+        expression_init_node(&exp_node, $3, NULL, CAL_MIN);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_node;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+        //show_expression(&CONTEXT->exp_array[(CONTEXT->exp_num) - 1]);
+    }
+    | AVG LBRACE expression RBRACE{
+        Expression exp_node;
+        expression_init_node(&exp_node, $3, NULL, CAL_AVG);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_node;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+        //show_expression(&CONTEXT->exp_array[(CONTEXT->exp_num) - 1]);
+    }
+
+    ;
+select:
+    SELECT select_main SEMICOLON{
+        CONTEXT->ssql->flag=SCF_SELECT;
+        
+        //CONTEXT->condition_length=0;
+        //CONTEXT->from_length=0;
+        //CONTEXT->select_length=0;
+        //CONTEXT->value_length = 0;
+    }
+    ;
+select_main:
+    expression_list FROM rel_list where group_list order_list
+    {
+        $$ = &CONTEXT->ssql->sstr.selection[CONTEXT->select_num];
+    }
+    ;
+group_list_add:
+    | COMMA ID DOT ID group_list_add{
+        group_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].group_by, $2, $4);
+    }
+    | COMMA ID group_list_add{
+        group_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].group_by, NULL, $2);
+    };
+group_list:
+    | GROUP BY ID group_list_add{
+        group_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].group_by, NULL, $3);
+    }
+    | GROUP BY ID DOT ID group_list_add{
+        group_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].group_by, $3, $5);
+    }
+    ;
+order_list_add:
+    | COMMA ID DOT ID ASC order_list_add{
+        order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, $2, $4, 1);
+    }
+    | COMMA ID ASC order_list_add{
+        order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, NULL, $2, 1);
+    }
+    | COMMA ID DOT ID DESC order_list_add{
+        order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, $2, $4, 0);
+    }
+    | COMMA ID DESC order_list_add{
+        order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, NULL, $2, 0);
+    }
+    ;
+order_list:
+    | ORDER BY ID DOT ID ASC order_list_add {
+        order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, $3, $5, 1);
+    }
+    | ORDER BY ID ASC order_list_add {
+        order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, NULL, $3, 1);
+    }
+    | ORDER BY ID DOT ID DESC order_list_add {
+        order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, $3, $5, 0);
+    }
+    | ORDER BY ID DESC order_list_add {
+        order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, NULL, $3, 0);
+    }
+    ;
+join_add_know:
+    | INNER JOIN
+    {
+        select_join_num_change(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num],1);
+    }
+    ;
+join_list_add:
+    | join_add_know ID ON join_condition_list join_list_add
+    {
+        select_join_append_relation(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num], $2);
+        select_join_num_change(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num],0);
+    };
+rel_list_add:
+    | COMMA ID rel_list_add {	
+        selects_append_relation(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num], $2);
+    }
+    ;
+rel_list:
+    ID rel_list_add {
+        selects_append_relation(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num], $1);
+    }
+    |ID INNER JOIN ID ON join_condition_list join_list_add{
+        selects_append_relation(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num], $1);
+        select_join_append_relation(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num], $4);
+    }
+    ;
+    /* empty */
+join_condition_list_add:
+    | AND condition join_condition_list_add
+    {
+        select_join_append_condition(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num], $2);
+    }
+    ;
+join_condition_list:
+    /* empty */
+    condition join_condition_list_add 
+    {
+        select_join_append_condition(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num], $1);
+    }
+    ;
+
+where:
+    /* empty */ 
+    | WHERE where_condition_list 
+    {	
+        
+    }
+    ;
+where_condition_list_add:
+    | AND condition where_condition_list_add
+    {
+        select_append_condition(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num], $2);
+        //show_condition(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num]);
+    }
+    ;
+where_condition_list:
+    /* empty */
+    condition where_condition_list_add 
+    {
+        show_select_num(CONTEXT->select_num);
+        select_append_condition(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num], $1);
+        //show_condition(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num]);
+    }
+    ;
+condition_select_know:
+    LBRACE SELECT
+    {
+        //show_select_num(CONTEXT->select_num);
+        CONTEXT->select_stack[CONTEXT->select_stack_index++] = CONTEXT->select_num;
+        CONTEXT->select_max++;
+        CONTEXT->select_num = CONTEXT->select_max;
+    }
+    ;
+condition:
+    expression comOp expression 
+    {
+        Condition_Composite condition_composite;
+        condition_exp_exp_init(&condition_composite, $1, $3, $2);
+        CONTEXT->condition_composites[CONTEXT->condition_total_num++] = condition_composite;
+        
+        //CONTEXT->condition_composite_num[CONTEXT->select_num]++;
+        
+        $$ = &CONTEXT->condition_composites[CONTEXT->condition_total_num - 1];
+    }
+    |expression comOp condition_select_know select_main RBRACE
+    {
+        CONTEXT->select_stack_index--;
+        CONTEXT->select_num = CONTEXT->select_stack[CONTEXT->select_stack_index];
+        
+        show_select_num(CONTEXT->select_num);
+        Condition_Composite condition_composite;
+        condition_exp_select_init(&condition_composite, $1, $4, $2);
+        CONTEXT->condition_composites[CONTEXT->condition_total_num++] = condition_composite;
+        
+        //CONTEXT->condition_composite_num[CONTEXT->select_num]++;
+        
+        $$ = &CONTEXT->condition_composites[CONTEXT->condition_total_num - 1];
+    }
+    ;
 
 comOp:
-  	  EQ { CONTEXT->comp = EQUAL_TO; }
-    | LT { CONTEXT->comp = LESS_THAN; }
-    | GT { CONTEXT->comp = GREAT_THAN; }
-    | LE { CONTEXT->comp = LESS_EQUAL; }
-    | GE { CONTEXT->comp = GREAT_EQUAL; }
-    | NE { CONTEXT->comp = NOT_EQUAL; }
+  	  EQ { $$ = EQUAL_TO; }
+    | LT { $$ = LESS_THAN; }
+    | GT { $$ = GREAT_THAN; }
+    | LE { $$ = LESS_EQUAL; }
+    | GE { $$ = GREAT_EQUAL; }
+    | NE { $$ = NOT_EQUAL; }
+    | IN {$$ = ATTR_IN;}
+    | NOT IN{$$ = ATTR_NOT_IN;}
     ;
 
 load_data:
@@ -626,7 +877,9 @@ load_data:
 			load_data_init(&CONTEXT->ssql->sstr.load_data, $7, $4);
 		}
 		;
+
 %%
+
 //_____________________________________________________________________
 extern void scan_string(const char *str, yyscan_t scanner);
 

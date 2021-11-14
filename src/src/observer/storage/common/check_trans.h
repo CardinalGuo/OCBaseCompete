@@ -94,6 +94,11 @@ static bool check_date(const char* date_str){
     return true;
 };
 
+static int date_to_num(const void *data){
+  const char *date_str = (char *)data;
+  std::vector<int> ymd_num = split_date_toNum(date_str);
+  return ymd_num[0] * 10000 + ymd_num[1]*100 + ymd_num[2];
+};
 }
 
 

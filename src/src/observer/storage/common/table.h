@@ -55,7 +55,7 @@ public:
   RC delete_record(Trx *trx, ConditionFilter *filter, int *deleted_count);
 
   RC scan_record(Trx *trx, ConditionFilter *filter, int limit, void *context, void (*record_reader)(const char *data, void *context));
-
+  RC scan_record_string(Trx *trx, std::vector<char *> &vector_records);
   RC create_index(Trx *trx, const char *index_name, const char *attribute_name);
 
 public:
@@ -107,5 +107,14 @@ private:
   RecordFileHandler *     record_handler_;   /// 记录操作
   std::vector<Index *>    indexes_;
 };
+
+// class Operation_Select{
+// public:
+//   Operation_Select();
+//   ~Operation_Select();
+//   void init_select(Selects select)
+// private:
+//   Db *db;
+// };
 
 #endif // __OBSERVER_STORAGE_COMMON_TABLE_H__

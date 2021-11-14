@@ -49,61 +49,72 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    SEMICOLON = 258,
-    CREATE = 259,
-    DROP = 260,
-    TABLE = 261,
-    TABLES = 262,
-    INDEX = 263,
-    SELECT = 264,
-    DESC = 265,
-    SHOW = 266,
-    SYNC = 267,
-    INSERT = 268,
-    DELETE = 269,
-    UPDATE = 270,
-    LBRACE = 271,
-    RBRACE = 272,
-    COMMA = 273,
-    TRX_BEGIN = 274,
-    TRX_COMMIT = 275,
-    TRX_ROLLBACK = 276,
-    INT_T = 277,
-    STRING_T = 278,
-    FLOAT_T = 279,
-    DATE = 280,
-    HELP = 281,
-    EXIT = 282,
-    DOT = 283,
-    INTO = 284,
-    VALUES = 285,
-    FROM = 286,
-    WHERE = 287,
-    AND = 288,
-    SET = 289,
-    ON = 290,
-    LOAD = 291,
-    DATA = 292,
-    NULLABLE = 293,
-    NULLL = 294,
-    MAX = 295,
-    MIN = 296,
-    AVG = 297,
-    COUNT = 298,
-    INFILE = 299,
-    EQ = 300,
-    LT = 301,
-    GT = 302,
-    LE = 303,
-    GE = 304,
-    NE = 305,
-    NUMBER = 306,
-    FLOAT = 307,
-    ID = 308,
-    PATH = 309,
-    SSS = 310,
-    STAR = 311,
-    STRING_V = 312
+    EQ = 258,
+    NE = 259,
+    LT = 260,
+    GT = 261,
+    GE = 262,
+    LE = 263,
+    ADD = 264,
+    SUB = 265,
+    STAR = 266,
+    DIV = 267,
+    SEMICOLON = 268,
+    CREATE = 269,
+    DROP = 270,
+    TABLE = 271,
+    TABLES = 272,
+    INDEX = 273,
+    SELECT = 274,
+    DESC = 275,
+    ASC = 276,
+    SHOW = 277,
+    SYNC = 278,
+    INSERT = 279,
+    DELETE = 280,
+    UPDATE = 281,
+    LBRACE = 282,
+    RBRACE = 283,
+    COMMA = 284,
+    TRX_BEGIN = 285,
+    TRX_COMMIT = 286,
+    TRX_ROLLBACK = 287,
+    INT_T = 288,
+    STRING_T = 289,
+    FLOAT_T = 290,
+    DATE = 291,
+    HELP = 292,
+    EXIT = 293,
+    DOT = 294,
+    INTO = 295,
+    VALUES = 296,
+    FROM = 297,
+    WHERE = 298,
+    AND = 299,
+    SET = 300,
+    ON = 301,
+    LOAD = 302,
+    DATA = 303,
+    NULLABLE = 304,
+    NULLL = 305,
+    INNER = 306,
+    JOIN = 307,
+    GROUP = 308,
+    ORDER = 309,
+    BY = 310,
+    MAX = 311,
+    MIN = 312,
+    AVG = 313,
+    COUNT = 314,
+    IN = 315,
+    NOT = 316,
+    INFILE = 317,
+    NUMBER = 318,
+    FLOAT = 319,
+    ID = 320,
+    PATH = 321,
+    SSS = 322,
+    STRING_V = 323
   };
 #endif
 
@@ -112,17 +123,21 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 119 "yacc_sql.y" /* yacc.c:1921  */
+#line 158 "yacc_sql.y" /* yacc.c:1921  */
 
   struct _Attr *attr;
   struct _Condition *condition1;
   struct _Value *value1;
+  struct _Condition_Composite *Condition_Composite1;
+  struct _Selects *selects1;
+  struct _Expression *expression1;
   char *string;
   int number;
+  int comOp;
   float floats;
 	char *position;
 
-#line 126 "yacc_sql.tab.h" /* yacc.c:1921  */
+#line 141 "yacc_sql.tab.h" /* yacc.c:1921  */
 };
 
 typedef union YYSTYPE YYSTYPE;

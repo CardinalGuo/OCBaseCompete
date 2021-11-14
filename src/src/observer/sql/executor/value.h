@@ -17,6 +17,8 @@ See the Mulan PSL v2 for more details. */
 
 #include <string.h>
 #include "common/log/log.h"
+#include "storage/common/check_trans.h"
+
 
 #include <string>
 #include <ostream>
@@ -42,10 +44,13 @@ public:
     os << value_;
   }
 
+  std::string get_value() const{
+    return value_;
+  }
+
   int compare(const TupleValue &other) const override {
     const DateValue &date_other = (const DateValue &)other;
-    //return strcmp(value_.c_str(), date_other.value_.c_str());
-    return 0;
+    return check_trans::compare_date(value_.c_str(), date_other.value_.c_str());
   }
 
 private:

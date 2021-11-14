@@ -35,15 +35,14 @@ QUOTE            [\'\"]
 {WHITE_SAPCE}                           // ignore whitespace
 \n																						 ;
 
-[\-]?{DIGIT}+					                   yylval->number=atoi(yytext); RETURN_TOKEN(NUMBER);
-[\-]?{DIGIT}+{DOT}{DIGIT}+				       yylval->floats=(float)(atof(yytext)); RETURN_TOKEN(FLOAT);
+{DIGIT}+					                   yylval->number=atoi(yytext); RETURN_TOKEN(NUMBER);
+{DIGIT}+{DOT}{DIGIT}+				       yylval->floats=(float)(atof(yytext)); RETURN_TOKEN(FLOAT);
 
 ";"                 	 				           RETURN_TOKEN(SEMICOLON);
 {DOT}                 					         RETURN_TOKEN(DOT);
 "*"                   					         RETURN_TOKEN(STAR);
 [Ee][Xx][Ii][Tt]						             RETURN_TOKEN(EXIT);
 [Hh][Ee][Ll][Pp]                    	   RETURN_TOKEN(HELP);
-[Dd][Ee][Ss][Cc]                         RETURN_TOKEN(DESC);
 [Cc][Rr][Ee][Aa][Tt][Ee]                 RETURN_TOKEN(CREATE);
 [Dd][Rr][Oo][Pp]                    	   RETURN_TOKEN(DROP);
 [Tt][Aa][Bb][Ll][Ee]					           RETURN_TOKEN(TABLE);
@@ -78,10 +77,21 @@ QUOTE            [\'\"]
 [Aa][Vv][Gg]                            RETURN_TOKEN(AVG);
 [Cc][Oo][Uu][Nn][Tt]                    RETURN_TOKEN(COUNT);
 [Ii][Nn][Ff][Ii][Ll][Ee]                 RETURN_TOKEN(INFILE);
+[Ii][Nn]                                RETURN_TOKEN(IN);
+[Ii][Nn][Nn][Ee][Rr]                                RETURN_TOKEN(INNER);
+[Gg][Rr][Oo][Uu][Pp]                                RETURN_TOKEN(GROUP);
+[Oo][Rr][Dd][Ee][Rr]                                RETURN_TOKEN(ORDER);
+[Bb][Yy]                                RETURN_TOKEN(BY);
+[Jj][Oo][Ii][Nn]                                RETURN_TOKEN(JOIN);
+[Aa][Ss][Cc]                                RETURN_TOKEN(ASC);
+[Dd][Ee][Ss][Cc]                                RETURN_TOKEN(DESC);
+[Nn][Oo][Tt]                            RETURN_TOKEN(NOT);
 {ID}							                       yylval->string=strdup(yytext); RETURN_TOKEN(ID);
 "("								                       RETURN_TOKEN(LBRACE);
 ")"								                       RETURN_TOKEN(RBRACE);
-
+"+"                                     RETURN_TOKEN(ADD);
+"-"                                     RETURN_TOKEN(SUB);
+"/"                                     RETURN_TOKEN(DIV);
 ","                                      RETURN_TOKEN(COMMA);
 "="                                      RETURN_TOKEN(EQ);
 "<="                                     RETURN_TOKEN(LE);

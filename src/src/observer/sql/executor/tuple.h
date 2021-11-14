@@ -18,11 +18,11 @@ See the Mulan PSL v2 for more details. */
 #include <memory>
 #include <vector>
 #include <string>
-
+#include <math.h>
 #include "common/log/log.h"
 #include "sql/parser/parse.h"
 #include "sql/executor/value.h"
-
+#include "storage/common/check_trans.h"
 class Table;
 
 class Tuple {
@@ -44,7 +44,9 @@ public:
   void add(const char *s, int len, bool is_date);
   
   const std::vector<std::shared_ptr<TupleValue>> &values() const {
+    
     return values_;
+    
   }
 
   int size() const {
@@ -100,6 +102,7 @@ public:
   void add(AttrType type, const char *table_name, const char *field_name);
   void add(AttrType type, const char *table_name, const char *field_name, const char *calcu_name);
   void add_if_not_exists(AttrType type, const char *table_name, const char *field_name, const char *calcu_name);
+  bool add_if_not_exists_return(AttrType type, const char *table_name, const char *field_name, const char *calcu_name);
   // void merge(const TupleSchema &other);
   void append(const TupleSchema &other);
 
@@ -140,6 +143,7 @@ public:
   void add(Tuple && tuple);
 
   void clear();
+
   void check_calculate(){
     size_t fields_size = schema_.fields().size();
     Tuple tuple_out;
@@ -265,7 +269,40 @@ public:
             sum += val->get_value();
             nums += 1;
           }
-          tuple_out.add((float)((float)sum / nums));
+          float result = ((float)sum / nums);
+          result = round(result * 100) / 100.0;
+          tuple_out.add(result);
+        }
+      }
+      else if (attrtype == DATES)
+      {
+        if (0 == strcmp("MAX",calcu_name)){
+          const DateValue *val = (const DateValue *)((&tuples_[0].get(i)));
+          std::string maxx = val->get_value();
+          LOG_INFO("for size_t %d",(int)tuples_.size());
+          for (size_t j = 0; j < tuples_.size(); j++)
+          {
+            const DateValue *val = (const DateValue *)((&tuples_[j].get(i)));
+            //LOG_INFO("%d", val->get_value());
+            if (check_trans::compare_date(maxx.c_str(), val->get_value().c_str()) < 0){
+              maxx = val->get_value();
+            }
+          }
+          tuple_out.add(maxx.c_str(),strlen(maxx.c_str()));
+
+        }else if (0 == strcmp("MIN",calcu_name)){
+          const DateValue *val = (const DateValue *)((&tuples_[0].get(i)));
+          std::string minn = val->get_value();
+          LOG_INFO("for size_t %d",(int)tuples_.size());
+          for (size_t j = 0; j < tuples_.size(); j++)
+          {
+            const DateValue *val = (const DateValue *)((&tuples_[j].get(i)));
+            //LOG_INFO("%d", val->get_value());
+            if (check_trans::compare_date(minn.c_str(), val->get_value().c_str()) > 0){
+              minn = val->get_value();
+            }
+          }
+          tuple_out.add(minn.c_str(),strlen(minn.c_str()));
         }
       }
     }
