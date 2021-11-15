@@ -1776,7 +1776,9 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
         else
         {
             if (left.size() > 1 || right.size() > 1)
-                return RC::INVALID_ARGUMENT;
+                rc = RC::INVALID_ARGUMENT;
+            if (rc != RC::SUCCESS)
+                return rc;
             rc = select_value_compare(left[0], right[0], left_attr, right_attr, cmp_result);
             ////LOG_INOF("%d cmp_Res %d", condition->comp, cmp_result);
             switch (condition->comp)

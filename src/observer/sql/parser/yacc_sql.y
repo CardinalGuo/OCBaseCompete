@@ -88,6 +88,8 @@ ParserContext *get_context(yyscan_t scanner)
 %left SUB
 %left STAR
 %left DIV
+%nonassoc UMINUS
+
 
 %define api.pure full
 %lex-param { yyscan_t scanner }
@@ -380,6 +382,12 @@ value:
     |FLOAT{
   		value_init_float(&CONTEXT->values[CONTEXT->value_length++], $1);
 		}
+    |SUB NUMBER %prec UMINUS{	
+  		value_init_integer(&CONTEXT->values[CONTEXT->value_length++], -$2);
+		}
+    |SUB FLOAT %prec UMINUS{
+  		value_init_float(&CONTEXT->values[CONTEXT->value_length++], -$2);
+		}
     |SSS {
 			$1 = substr($1,1,strlen($1)-2);
   		value_init_string(&CONTEXT->values[CONTEXT->value_length++], $1);
@@ -622,6 +630,22 @@ expression:
     }
     | FLOAT {
         value_init_float(&CONTEXT->values[CONTEXT->value_length++], $1);
+        Value *value = &CONTEXT->values[CONTEXT->value_length - 1];
+        Expression exp_leaf;
+        expression_init_leaf(&exp_leaf, value);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_leaf;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+    }
+    |SUB NUMBER %prec UMINUS{
+        value_init_integer(&CONTEXT->values[CONTEXT->value_length++], -$2);
+        Value *value = &CONTEXT->values[CONTEXT->value_length - 1];
+        Expression exp_leaf;
+        expression_init_leaf(&exp_leaf, value);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_leaf;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+    }
+    |SUB FLOAT %prec UMINUS{
+        value_init_float(&CONTEXT->values[CONTEXT->value_length++], -$2);
         Value *value = &CONTEXT->values[CONTEXT->value_length - 1];
         Expression exp_leaf;
         expression_init_leaf(&exp_leaf, value);
