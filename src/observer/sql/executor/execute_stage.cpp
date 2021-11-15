@@ -747,14 +747,14 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
         {
           int tmp_int = *(int *)(select_ress[j][i]);
 
-          ss << tmp_int;
+          ss << tmp_int ;
         }
         break;
         case FLOATS:
         {
           float tmp_float = *(float *)select_ress[j][i];
           tmp_float = round(tmp_float * 100) / 100.0;
-          ss << tmp_float;
+          ss << tmp_float ;
         }
         break;
         case DATES:
@@ -763,7 +763,7 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
           std::string date = std::to_string(tmp_int);
           date.insert(6,"-");
           date.insert(4,"-");
-          ss << date;
+          ss << date ;
         }
         break;
         case CHARS:
@@ -776,10 +776,10 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
           break;
         }
         free(select_ress[j][i]);
-        if (j != select_ress.size() - 1)
-          ss << " | " ;
+        if (j != select_ress.size() -1)
+          ss << " | ";
       }
-      
+
       ss << std::endl;
     }
   }

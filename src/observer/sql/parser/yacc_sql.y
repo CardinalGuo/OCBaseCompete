@@ -430,7 +430,7 @@ condition_old:
 			Value *right_value = &CONTEXT->values[CONTEXT->value_length - 1];
 
 			Condition condition;
-			condition_init(&condition, CONTEXT->comp, 1, &left_attr, NULL, 0, NULL, right_value);
+			condition_init(&condition, $2, 1, &left_attr, NULL, 0, NULL, right_value);
 			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 			// $$ = ( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 1;
@@ -449,7 +449,7 @@ condition_old:
 			Value *right_value = &CONTEXT->values[CONTEXT->value_length - 1];
 
 			Condition condition;
-			condition_init(&condition, CONTEXT->comp, 0, NULL, left_value, 0, NULL, right_value);
+			condition_init(&condition, $2, 0, NULL, left_value, 0, NULL, right_value);
 			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 			// $$ = ( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 0;
@@ -471,7 +471,7 @@ condition_old:
 			relation_attr_init(&right_attr, NULL, $3);
 
 			Condition condition;
-			condition_init(&condition, CONTEXT->comp, 1, &left_attr, NULL, 1, &right_attr, NULL);
+			condition_init(&condition, $2, 1, &left_attr, NULL, 1, &right_attr, NULL);
 			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 			// $$=( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 1;
@@ -490,7 +490,7 @@ condition_old:
 			relation_attr_init(&right_attr, NULL, $3);
 
 			Condition condition;
-			condition_init(&condition, CONTEXT->comp, 0, NULL, left_value, 1, &right_attr, NULL);
+			condition_init(&condition, $2, 0, NULL, left_value, 1, &right_attr, NULL);
 			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 
 			// $$=( Condition *)malloc(sizeof( Condition));
@@ -512,7 +512,7 @@ condition_old:
 			Value *right_value = &CONTEXT->values[CONTEXT->value_length - 1];
 
 			Condition condition;
-			condition_init(&condition, CONTEXT->comp, 1, &left_attr, NULL, 0, NULL, right_value);
+			condition_init(&condition, $4, 1, &left_attr, NULL, 0, NULL, right_value);
 			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 
 			// $$=( Condition *)malloc(sizeof( Condition));
@@ -534,7 +534,7 @@ condition_old:
 			relation_attr_init(&right_attr, $3, $5);
 
 			Condition condition;
-			condition_init(&condition, CONTEXT->comp, 0, NULL, left_value, 1, &right_attr, NULL);
+			condition_init(&condition, $2, 0, NULL, left_value, 1, &right_attr, NULL);
 			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 			// $$=( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 0;//属性值
@@ -555,7 +555,7 @@ condition_old:
 			relation_attr_init(&right_attr, $5, $7);
 
 			Condition condition;
-			condition_init(&condition, CONTEXT->comp, 1, &left_attr, NULL, 1, &right_attr, NULL);
+			condition_init(&condition, $4, 1, &left_attr, NULL, 1, &right_attr, NULL);
 			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 			// $$=( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 1;		//属性

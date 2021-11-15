@@ -431,6 +431,22 @@ void get_max_min_value(std::vector<void *> &left, AttrType attr_left, std::vecto
         }
     }
     break;
+    case CHARS:
+    {
+        value = strdup((char *)left[0]);
+        // char *ch_value = value;
+        // int length = strlen((char *)left[0]);
+        for (size_t i = 1; i < left.size(); i++)
+        {
+            int cmp = strcmp((char *)value,(char *)left[i]);
+            if (cmp * max_min < 0)
+            {
+                free(value);
+                value = strdup((char *)left[i]);
+            }
+        }
+    }
+    break;
     default:
         break;
     }
@@ -776,7 +792,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
             break;
         }
         case CAL_MAX:
-            if (attr_left == UNDEFINED || attr_left == CHARS)
+            if (attr_left == UNDEFINED)
             {
                 finish = false;
                 break;
@@ -788,7 +804,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
             }
             break;
         case CAL_MIN:
-            if (attr_left == UNDEFINED || attr_left == CHARS)
+            if (attr_left == UNDEFINED)
             {
                 finish = false;
                 break;
@@ -800,32 +816,55 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
             }
             break;
         case CAL_AVG:
-            if (attr_left == UNDEFINED || attr_left == CHARS || attr_left == DATES)
+            if (attr_left == UNDEFINED || attr_left == CHARS)
             {
                 finish = false;
                 break;
             }
-            res_type = FLOATS;
-            if (left.size() > 0)
+            if (attr_left == DATES)
             {
-                void *value = malloc(sizeof(int));
-                int avg_int = 0;
-                float avg_float = 0.0;
-                int sz = 0;
-                for (size_t index = 0; index < left.size(); index++)
+                res_type = INTS;
+                if (left.size() > 0)
                 {
-                    sz++;
-                    if (attr_left == INTS)
+                    void *value = malloc(sizeof(int));
+                    int avg_int = 0;
+                    int sz = 0;
+                    for (size_t index = 0; index < left.size(); index++)
+                    {
+                        sz++;
                         avg_int += *(int *)left[index];
-                    if (attr_left == FLOATS)
-                        avg_float += *(float *)left[index];
+                    }
+
+                    ////LOG_INOF("%f",avg);
+                    memcpy(value, &avg_int, sizeof(avg_int));
+                    values_vec.push_back(value);
                 }
-                float avg = attr_left == INTS ? (float)(avg_int) / (float)(sz) : avg_float / (float)sz;
-                res_type = FLOATS;
-                ////LOG_INOF("%f",avg);
-                memcpy(value, &avg, sizeof(avg));
-                values_vec.push_back(value);
             }
+            else
+            {
+                res_type = FLOATS;
+                if (left.size() > 0)
+                {
+                    void *value = malloc(sizeof(int));
+                    int avg_int = 0;
+                    float avg_float = 0.0;
+                    int sz = 0;
+                    for (size_t index = 0; index < left.size(); index++)
+                    {
+                        sz++;
+                        if (attr_left == INTS)
+                            avg_int += *(int *)left[index];
+                        if (attr_left == FLOATS)
+                            avg_float += *(float *)left[index];
+                    }
+                    float avg = attr_left == INTS ? (float)(avg_int) / (float)(sz) : avg_float / (float)sz;
+                    res_type = FLOATS;
+                    ////LOG_INOF("%f",avg);
+                    memcpy(value, &avg, sizeof(avg));
+                    values_vec.push_back(value);
+                }
+            }
+
             break;
 
         case CAL_IDEO:
@@ -1373,7 +1412,7 @@ RC SelectExe::load_records_from_table(const char *relation_name)
 
 RC SelectExe::load_records_and_schames(const Selects select)
 {
-    for (int i = select.relation_num - 1; i >= 0 ; i--)
+    for (int i = select.relation_num - 1; i >= 0; i--)
     {
         std::vector<char *> table_records;
         Table *table = datebase->find_table(select.relations[i]);

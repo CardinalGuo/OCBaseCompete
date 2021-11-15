@@ -148,9 +148,12 @@ bool DefaultConditionFilter::filter(const Record &rec) const
   int cmp_result = 0;
   switch (attr_type_) {
     case DATES: {
-      cmp_result = check_trans::compare_date(left_value, right_value);
-      break;
-    }
+      int left = left_.is_attr ? *(int *)left_value : check_trans::date_to_num(left_value);
+      int right = right_.is_attr ? *(int *)right_value : check_trans::date_to_num(right_value);
+      LOG_INFO("delete cmp date %d %d",left,right);
+      cmp_result = (int)((left - right == 0) ? 0 : (left - right > 0 ? 1 : -1));
+      
+    }break;
     case CHARS: {  // 字符串都是定长的，直接比较
       // 按照C字符串风格来定
       cmp_result = strcmp(left_value, right_value);
@@ -171,7 +174,7 @@ bool DefaultConditionFilter::filter(const Record &rec) const
     default: {
     }
   }
-
+  LOG_INFO("cmp_op %d res% d",comp_op_,cmp_result);
   switch (comp_op_) {
     case EQUAL_TO:
       return 0 == cmp_result;
