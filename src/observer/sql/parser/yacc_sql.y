@@ -884,6 +884,23 @@ condition:
         
         $$ = &CONTEXT->condition_composites[CONTEXT->condition_total_num - 1];
     }
+    |condition_select_know select_main RBRACE comOp condition_select_know select_main RBRACE
+    {
+        CONTEXT->select_stack_index--;
+        CONTEXT->select_num = CONTEXT->select_stack[CONTEXT->select_stack_index];
+        show_select_num(CONTEXT->select_num);
+        CONTEXT->select_stack_index--;
+        CONTEXT->select_num = CONTEXT->select_stack[CONTEXT->select_stack_index];
+        show_select_num(CONTEXT->select_num);
+        
+        Condition_Composite condition_composite;
+        condition_select_select_init(&condition_composite, $2, $6, $4);
+        CONTEXT->condition_composites[CONTEXT->condition_total_num++] = condition_composite;
+        
+        //CONTEXT->condition_composite_num[CONTEXT->select_num]++;
+        
+        $$ = &CONTEXT->condition_composites[CONTEXT->condition_total_num - 1];
+    }
     ;
 
 comOp:

@@ -1502,7 +1502,7 @@ RC SelectExe::terminal_select(std::vector<std::vector<void *>> &select_ress, std
 
     do_group_by(vec_records);
 
-    //LOG_INOF("prepare res");
+    LOG_INFO("prepare res");
 
     rc = calculate_result();
     if (rc != SUCCESS)
@@ -1513,7 +1513,7 @@ RC SelectExe::terminal_select(std::vector<std::vector<void *>> &select_ress, std
         free_vector(vec_records);
 
     load_terminal_fields();
-
+    LOG_INFO("prepare res ok");
     return rc;
 }
 
@@ -1602,12 +1602,15 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     RC rc = RC::SUCCESS;
     std::vector<void *> left, right;
     AttrType left_attr, right_attr;
-    std::vector<std::vector<void *>> select_res_left,select_res_right;
+    std::vector<std::vector<void *>> select_res_left, select_res_right;
     bool type_ok = true;
     if (condition->left != nullptr)
         calculate_con_expression(left, condition->left, left_attr, data_res);
     if (condition->right != nullptr)
+    {
         calculate_con_expression(right, condition->right, right_attr, data_res);
+        LOG_INFO("right is not nullptr");
+    }
     if (condition->select_attr_left != nullptr)
     {
 
@@ -1624,8 +1627,15 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
         }
         else
         {
-            left_attr = condition_select_attrs[0];
-            if (left_attr == UNDEFINED || select_res_left.size() > 1 || select_res_left[0].size() > 1)
+            if (condition_select_attrs.size() > 0)
+            {
+                left_attr = condition_select_attrs[0];
+            }
+            else
+            {
+                left_attr = NULL_TYPE;
+            }
+            if (left_attr == UNDEFINED || select_res_left.size() > 1)
             {
                 type_ok = false;
                 for (size_t i = 0; i < select_res_left.size(); i++)
@@ -1636,7 +1646,14 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
             }
             else
             {
-                left.push_back(select_res_left[0][0]);
+                if (select_res_left.size() > 0)
+                {
+                    for (size_t i = 0; i < select_res_left[0].size(); i++)
+                    {
+                        LOG_INFO("left_res is not empty");
+                        left.push_back(select_res_left[0][i]);
+                    }
+                }
             }
         }
     }
@@ -1656,13 +1673,21 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
         std::vector<std::string> condition_select_fields;
 
         rc = sel_exe.terminal_select(select_res_right, condition_select_attrs, condition_select_fields);
+        LOG_INFO("doint backtrac ok %d %d", (int)condition_select_attrs.size(), rc);
         if (rc != RC::SUCCESS)
         {
             type_ok = false;
         }
         else
         {
-            right_attr = condition_select_attrs[0];
+            if (condition_select_attrs.empty())
+            {
+                right_attr = NULL_TYPE;
+            }
+            else
+            {
+                right_attr = condition_select_attrs[0];
+            }
             if (right_attr == UNDEFINED || select_res_right.size() > 1)
             {
                 type_ok = false;
@@ -1674,9 +1699,13 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
             }
             else
             {
-                for (size_t i = 0; i < select_res_right[0].size(); i++)
+                if (select_res_right.size() > 0)
                 {
-                    right.push_back(select_res_right[0][i]);
+                    for (size_t i = 0; i < select_res_right[0].size(); i++)
+                    {
+                        LOG_INFO("right_res is not empty");
+                        right.push_back(select_res_right[0][i]);
+                    }
                 }
             }
         }
@@ -1689,9 +1718,9 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
         return RC::INVALID_ARGUMENT;
     }
     //LOG_INOF("Type %d %d %d", left_attr, right_attr, type_ok);
-
+    LOG_INFO("type_ok %d type left %d right %d  %d  %d", type_ok, left_attr, right_attr, (int)left.size(), (int)right.size());
     //check left_res can do with right_res
-    if (left_attr != right_attr)
+    if (left_attr != right_attr && left_attr != NULL_TYPE && right_attr != NULL_TYPE)
     {
         if (!((left_attr == INTS && right_attr == FLOATS) || (left_attr == FLOATS && right_attr == INTS) || (left_attr == DATES && right_attr == CHARS) || (left_attr == CHARS && right_attr == DATES)))
         {
@@ -1726,6 +1755,7 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
         }
         else
         {
+            is_ok = true;
             for (auto it : right)
             {
                 rc = select_value_compare(left[0], it, left_attr, right_attr, cmp_result);
@@ -1739,84 +1769,92 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     }
     else
     {
-        rc = select_value_compare(left[0], right[0], left_attr, right_attr, cmp_result);
-        ////LOG_INOF("%d cmp_Res %d", condition->comp, cmp_result);
-        switch (condition->comp)
+        if (left.empty() || right.empty())
         {
-        case EQUAL_TO:
-        {
-            if (0 == cmp_result)
-            {
-                is_ok = true;
-            }
-            else
-            {
-                is_ok = false;
-            }
+            is_ok = false;
         }
-        break;
-        case LESS_EQUAL:
+        else
         {
-            if (cmp_result <= 0)
+
+            rc = select_value_compare(left[0], right[0], left_attr, right_attr, cmp_result);
+            ////LOG_INOF("%d cmp_Res %d", condition->comp, cmp_result);
+            switch (condition->comp)
             {
-                is_ok = true;
-            }
-            else
+            case EQUAL_TO:
             {
-                is_ok = false;
+                if (0 == cmp_result)
+                {
+                    is_ok = true;
+                }
+                else
+                {
+                    is_ok = false;
+                }
             }
-        }
-        break;
-        case NOT_EQUAL:
-        {
-            if (cmp_result != 0)
-            {
-                is_ok = true;
-            }
-            else
-            {
-                is_ok = false;
-            }
-        }
-        break;
-        case LESS_THAN:
-        {
-            if (cmp_result < 0)
-            {
-                is_ok = true;
-            }
-            else
-            {
-                is_ok = false;
-            }
-        }
-        break;
-        case GREAT_EQUAL:
-        {
-            if (cmp_result >= 0)
-            {
-                is_ok = true;
-            }
-            else
-            {
-                is_ok = false;
-            }
-        }
-        break;
-        case GREAT_THAN:
-        {
-            if (cmp_result > 0)
-            {
-                is_ok = true;
-            }
-            else
-            {
-                is_ok = false;
-            }
-        }
-        break;
-        default:
             break;
+            case LESS_EQUAL:
+            {
+                if (cmp_result <= 0)
+                {
+                    is_ok = true;
+                }
+                else
+                {
+                    is_ok = false;
+                }
+            }
+            break;
+            case NOT_EQUAL:
+            {
+                if (cmp_result != 0)
+                {
+                    is_ok = true;
+                }
+                else
+                {
+                    is_ok = false;
+                }
+            }
+            break;
+            case LESS_THAN:
+            {
+                if (cmp_result < 0)
+                {
+                    is_ok = true;
+                }
+                else
+                {
+                    is_ok = false;
+                }
+            }
+            break;
+            case GREAT_EQUAL:
+            {
+                if (cmp_result >= 0)
+                {
+                    is_ok = true;
+                }
+                else
+                {
+                    is_ok = false;
+                }
+            }
+            break;
+            case GREAT_THAN:
+            {
+                if (cmp_result > 0)
+                {
+                    is_ok = true;
+                }
+                else
+                {
+                    is_ok = false;
+                }
+            }
+            break;
+            default:
+                break;
+            }
         }
     }
 
@@ -1842,6 +1880,7 @@ RC SelectExe::combain(char *data_res, int table_num, int is_select, int join_num
                 for (int c_i = 0; c_i < select->condition_num; c_i++)
                 {
                     rc = condition_filter(is_ok, select->conditions[c_i], data_res);
+                    LOG_INFO("condition rc %d", rc);
                     if (rc != RC::SUCCESS)
                     {
                         return rc;
