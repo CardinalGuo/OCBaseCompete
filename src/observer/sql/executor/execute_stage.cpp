@@ -776,8 +776,10 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
           break;
         }
         free(select_ress[j][i]);
+        if (j != select_ress.size() - 1)
+          ss << "| " ;
       }
-
+      
       ss << std::endl;
     }
   }

@@ -1373,7 +1373,7 @@ RC SelectExe::load_records_from_table(const char *relation_name)
 
 RC SelectExe::load_records_and_schames(const Selects select)
 {
-    for (size_t i = 0; i < select.relation_num; i++)
+    for (int i = select.relation_num - 1; i >= 0 ; i--)
     {
         std::vector<char *> table_records;
         Table *table = datebase->find_table(select.relations[i]);
