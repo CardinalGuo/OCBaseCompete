@@ -706,7 +706,6 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
         case CAL_MINUS:
         {
 
-            
             res_type = attr_left;
             for (size_t i = 0; i < left.size(); i++)
             {
@@ -1495,9 +1494,7 @@ void SelectExe::get_expression_name(std::string &str_name, Expression *expressio
         {
         case CAL_MINUS:
             str_name.append("-");
-            str_name.append("(");
             get_expression_name(str_name, expression->left, deep + 1);
-            str_name.append(")");
             break;
         case CAL_SELF:
             str_name.append("(");
@@ -1890,19 +1887,8 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     //LOG_INOF("Type %d %d %d", left_attr, right_attr, type_ok);
     LOG_INFO("type_ok %d type left %d right %d  %d  %d", type_ok, left_attr, right_attr, (int)left.size(), (int)right.size());
     //check left_res can do with right_res
-    if (left_attr == NULL_TYPE || right_attr == NULL_TYPE)
-    {
-        is_ok = false;
-    }
 
-    if (!is_ok)
-    {
-        free_vector(left);
-        free_vector(right);
-        return rc;
-    }
-
-    if (left_attr != right_attr)
+    if (left_attr != right_attr && left_attr != NULL_TYPE && right_attr != NULL_TYPE)
     {
         if (!((left_attr == INTS && right_attr == FLOATS) || (left_attr == FLOATS && right_attr == INTS) || (left_attr == DATES && right_attr == CHARS) || (left_attr == CHARS && right_attr == DATES)))
         {
@@ -1923,15 +1909,22 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     {
         if (condition->comp == ATTR_IN)
         {
-            is_ok = false;
-            for (auto it : right)
+            if (right_attr == NULL_TYPE || left_attr == NULL_TYPE)
             {
-
-                rc = select_value_compare(left[0], it, left_attr, right_attr, cmp_result);
-                if (cmp_result == 0)
+                is_ok = false;
+            }
+            else
+            {
+                is_ok = false;
+                for (auto it : right)
                 {
-                    is_ok = true;
-                    break;
+
+                    rc = select_value_compare(left[0], it, left_attr, right_attr, cmp_result);
+                    if (cmp_result == 0)
+                    {
+                        is_ok = true;
+                        break;
+                    }
                 }
             }
         }
@@ -1951,7 +1944,7 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     }
     else
     {
-        if (left.empty() || right.empty())
+        if (left.empty() || right.empty() || left_attr == NULL_TYPE || right_attr == NULL_TYPE)
         {
             is_ok = false;
         }
