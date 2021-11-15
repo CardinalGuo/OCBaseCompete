@@ -1495,7 +1495,9 @@ void SelectExe::get_expression_name(std::string &str_name, Expression *expressio
         {
         case CAL_MINUS:
             str_name.append("-");
+            str_name.append("(");
             get_expression_name(str_name, expression->left, deep + 1);
+            str_name.append(")");
             break;
         case CAL_SELF:
             str_name.append("(");
