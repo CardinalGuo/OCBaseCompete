@@ -69,8 +69,12 @@ RC SelectExe::check_condition_valid(Condition_Composite *condition)
         rc = check_expression(condition->right);
     if (rc != SUCCESS)
         return RC::INVALID_ARGUMENT;
-    if (condition->select_attr_in != nullptr)
-        rc = check_select(*(Selects *)condition->select_attr_in);
+    if (condition->select_attr_left != nullptr)
+        rc = check_select(*(Selects *)condition->select_attr_left);
+    if (rc != SUCCESS)
+        return RC::INVALID_ARGUMENT;
+    if (condition->select_attr_right != nullptr)
+        rc = check_select(*(Selects *)condition->select_attr_right);
     if (rc != SUCCESS)
         return RC::INVALID_ARGUMENT;
     return RC::SUCCESS;
@@ -438,7 +442,7 @@ void get_max_min_value(std::vector<void *> &left, AttrType attr_left, std::vecto
         // int length = strlen((char *)left[0]);
         for (size_t i = 1; i < left.size(); i++)
         {
-            int cmp = strcmp((char *)value,(char *)left[i]);
+            int cmp = strcmp((char *)value, (char *)left[i]);
             if (cmp * max_min < 0)
             {
                 free(value);
@@ -1598,22 +1602,60 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     RC rc = RC::SUCCESS;
     std::vector<void *> left, right;
     AttrType left_attr, right_attr;
-    std::vector<std::vector<void *>> select_ress;
+    std::vector<std::vector<void *>> select_res_left,select_res_right;
     bool type_ok = true;
     if (condition->left != nullptr)
         calculate_con_expression(left, condition->left, left_attr, data_res);
     if (condition->right != nullptr)
         calculate_con_expression(right, condition->right, right_attr, data_res);
-    if (condition->select_attr_in != nullptr)
+    if (condition->select_attr_left != nullptr)
     {
 
-        const Selects *selects = (Selects *)condition->select_attr_in;
+        const Selects *selects = (Selects *)condition->select_attr_left;
         SelectExe sel_exe = SelectExe();
         sel_exe.SelectExe_init(this->datebase, *selects, this->trx);
         std::vector<AttrType> condition_select_attrs;
         std::vector<std::string> condition_select_fields;
 
-        rc = sel_exe.terminal_select(select_ress, condition_select_attrs, condition_select_fields);
+        rc = sel_exe.terminal_select(select_res_left, condition_select_attrs, condition_select_fields);
+        if (rc != RC::SUCCESS)
+        {
+            type_ok = false;
+        }
+        else
+        {
+            left_attr = condition_select_attrs[0];
+            if (left_attr == UNDEFINED || select_res_left.size() > 1 || select_res_left[0].size() > 1)
+            {
+                type_ok = false;
+                for (size_t i = 0; i < select_res_left.size(); i++)
+                {
+                    free_vector(select_res_left[i]);
+                }
+                select_res_left.clear();
+            }
+            else
+            {
+                left.push_back(select_res_left[0][0]);
+            }
+        }
+    }
+    if (!type_ok)
+    {
+        free_vector(left);
+        free_vector(right);
+        return RC::INVALID_ARGUMENT;
+    }
+    if (condition->select_attr_right != nullptr)
+    {
+
+        const Selects *selects = (Selects *)condition->select_attr_right;
+        SelectExe sel_exe = SelectExe();
+        sel_exe.SelectExe_init(this->datebase, *selects, this->trx);
+        std::vector<AttrType> condition_select_attrs;
+        std::vector<std::string> condition_select_fields;
+
+        rc = sel_exe.terminal_select(select_res_right, condition_select_attrs, condition_select_fields);
         if (rc != RC::SUCCESS)
         {
             type_ok = false;
@@ -1621,20 +1663,20 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
         else
         {
             right_attr = condition_select_attrs[0];
-            if (right_attr == UNDEFINED || select_ress.size() > 1)
+            if (right_attr == UNDEFINED || select_res_right.size() > 1)
             {
                 type_ok = false;
-                for (size_t i = 0; i < select_ress.size(); i++)
+                for (size_t i = 0; i < select_res_right.size(); i++)
                 {
-                    free_vector(select_ress[i]);
+                    free_vector(select_res_right[i]);
                 }
-                select_ress.clear();
+                select_res_right.clear();
             }
             else
             {
-                for (size_t i = 0; i < select_ress[0].size(); i++)
+                for (size_t i = 0; i < select_res_right[0].size(); i++)
                 {
-                    right.push_back(select_ress[0][i]);
+                    right.push_back(select_res_right[0][i]);
                 }
             }
         }

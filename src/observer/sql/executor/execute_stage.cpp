@@ -422,7 +422,7 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //   if (rc != SUCCESS) return RC::INVALID_ARGUMENT;
 //   if (condition->right != nullptr) rc = check_expression(field_set, condition->right);
 //   if (rc != SUCCESS) return RC::INVALID_ARGUMENT;
-//   if (condition->select_attr_in != nullptr) rc = check_select(*(Selects*)condition->select_attr_in, datebase);
+//   if (condition->select_attr_right != nullptr) rc = check_select(*(Selects*)condition->select_attr_right, datebase);
 //   if (rc != SUCCESS) return RC::INVALID_ARGUMENT;
 //   return RC::SUCCESS;
 // }

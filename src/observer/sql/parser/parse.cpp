@@ -35,10 +35,11 @@ void expression_init_node(Expression *expression, Expression *expression_left, E
   //LOG_INFO("exp node init address = %d ", expression);
 }
 void show_condition(Condition_Composite *condition){
-  if (condition->left != nullptr) show_expression(condition->left);
   LOG_INFO("%d" , condition->comp);
+  if (condition->left != nullptr) show_expression(condition->left);
   if (condition->right != nullptr) show_expression(condition->right);
-  if (condition->select_attr_in != nullptr) show_selects(*(Selects*)condition->select_attr_in);
+  if (condition->select_attr_left != nullptr) show_selects(*(Selects*)condition->select_attr_left);
+  if (condition->select_attr_right != nullptr) show_selects(*(Selects*)condition->select_attr_right);
 }
 
 void show_select_num(int num){
@@ -128,13 +129,29 @@ void value_destroy(Value *value) {
 void condition_exp_exp_init(Condition_Composite *condition_composite, Expression *left, Expression *right, CompOp cp){
   condition_composite->left = left;
   condition_composite->right = right;
-  condition_composite->select_attr_in = nullptr;
+  condition_composite->select_attr_left = nullptr;
+  condition_composite->select_attr_right = nullptr;
+  condition_composite->comp = cp;
+}
+void condition_select_select_init(Condition_Composite *condition_composite, Selects *select_left, Selects *select_right, CompOp cp){
+  condition_composite->left = nullptr;
+  condition_composite->right = nullptr;
+  condition_composite->select_attr_left = (void*)select_left;
+  condition_composite->select_attr_right = (void*)select_right;
+  condition_composite->comp = cp;
+}
+void condition_select_exe_init(Condition_Composite *condition_composite, Selects *select_left, Expression *right, CompOp cp){
+  condition_composite->left = nullptr;
+  condition_composite->right = right;
+  condition_composite->select_attr_left = (void*)select_left;
+  condition_composite->select_attr_right = nullptr;
   condition_composite->comp = cp;
 }
 void condition_exp_select_init(Condition_Composite *condition_composite, Expression *left, Selects *select_right, CompOp cp){
   condition_composite->left = left;
   condition_composite->right = nullptr;
-  condition_composite->select_attr_in = (void*)select_right;
+  condition_composite->select_attr_left = nullptr;
+  condition_composite->select_attr_right = (void*)select_right;
   condition_composite->comp = cp;
 }
 
@@ -171,12 +188,12 @@ void condition_destroy(Condition *condition) {
 void complex_condition_destroy(Condition_Composite *condition){
   if (condition->left != nullptr) expression_destroy(condition->left);
   if (condition->right != nullptr) expression_destroy(condition->right);
-  if (condition->select_attr_in != nullptr) {
-    selects_destroy((Selects *)condition->select_attr_in);
+  if (condition->select_attr_right != nullptr) {
+    selects_destroy((Selects *)condition->select_attr_right);
   }
   condition->left = nullptr;
   condition->right = nullptr;
-  condition->select_attr_in = nullptr;
+  condition->select_attr_right = nullptr;
   free(condition);
 }
 void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t length) {
@@ -324,8 +341,10 @@ Condition_Composite *select_condition_copy(Condition_Composite *condition){
   else condition_select->left = nullptr;
   if (condition->right != nullptr) condition_select->right = select_expression_copy(condition->right);
   else condition_select->right = nullptr;
-  if (condition->select_attr_in != nullptr) condition_select->select_attr_in = condition->select_attr_in;
-  else condition_select->select_attr_in = nullptr;
+  if (condition->select_attr_left != nullptr) condition_select->select_attr_left = condition->select_attr_left;
+  else condition_select->select_attr_left = nullptr;
+  if (condition->select_attr_right != nullptr) condition_select->select_attr_right = condition->select_attr_right;
+  else condition_select->select_attr_right = nullptr;
   return condition_select;
 }
 // void selects_init(Selects *selects, ...);

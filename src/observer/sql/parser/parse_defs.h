@@ -113,7 +113,8 @@ typedef struct _Condition_Composite {
   Expression *left;
   CompOp comp;         // comparison operator
   Expression *right;
-  void *select_attr_in;
+  void *select_attr_right;
+  void *select_attr_left;
 } Condition_Composite;
 
 typedef struct {
@@ -268,7 +269,8 @@ void value_init_NULL(Value *value, const char *v);
 void value_init_float(Value *value, float v);
 void value_init_string(Value *value, const char *v);
 void value_destroy(Value *value);
-
+void condition_select_exe_init(Condition_Composite *condition_composite, Selects *select_left, Expression *right, CompOp cp);
+void condition_select_select_init(Condition_Composite *condition_composite, Selects *select_left, Selects *select_right, CompOp cp);
 void condition_exp_select_init(Condition_Composite *condition_composite, Expression *left, Selects *select_right, CompOp cp);
 void condition_exp_exp_init(Condition_Composite *condition_composite, Expression *left, Expression *right, CompOp cp);
 

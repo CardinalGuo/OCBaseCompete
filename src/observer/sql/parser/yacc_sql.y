@@ -738,12 +738,19 @@ order_list_add:
     | COMMA ID ASC order_list_add{
         order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, NULL, $2, 1);
     }
+    | COMMA ID DOT ID order_list_add{
+        order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, $2, $4, 1);
+    }
+    | COMMA ID order_list_add{
+        order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, NULL, $2, 1);
+    }
     | COMMA ID DOT ID DESC order_list_add{
         order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, $2, $4, 0);
     }
     | COMMA ID DESC order_list_add{
         order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, NULL, $2, 0);
     }
+    
     ;
 order_list:
     | ORDER BY ID DOT ID ASC order_list_add {
@@ -757,6 +764,12 @@ order_list:
     }
     | ORDER BY ID DESC order_list_add {
         order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, NULL, $3, 0);
+    }
+    | ORDER BY ID DOT ID order_list_add {
+        order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, $3, $5, 1);
+    }
+    | ORDER BY ID order_list_add {
+        order_by_append_relattr(&CONTEXT->ssql->sstr.selection[CONTEXT->select_num].order_by, NULL, $3, 1);
     }
     ;
 join_add_know:
@@ -851,6 +864,20 @@ condition:
         show_select_num(CONTEXT->select_num);
         Condition_Composite condition_composite;
         condition_exp_select_init(&condition_composite, $1, $4, $2);
+        CONTEXT->condition_composites[CONTEXT->condition_total_num++] = condition_composite;
+        
+        //CONTEXT->condition_composite_num[CONTEXT->select_num]++;
+        
+        $$ = &CONTEXT->condition_composites[CONTEXT->condition_total_num - 1];
+    }
+    |condition_select_know select_main RBRACE comOp expression 
+    {
+        CONTEXT->select_stack_index--;
+        CONTEXT->select_num = CONTEXT->select_stack[CONTEXT->select_stack_index];
+        
+        show_select_num(CONTEXT->select_num);
+        Condition_Composite condition_composite;
+        condition_select_exe_init(&condition_composite, $2, $5, $4);
         CONTEXT->condition_composites[CONTEXT->condition_total_num++] = condition_composite;
         
         //CONTEXT->condition_composite_num[CONTEXT->select_num]++;
