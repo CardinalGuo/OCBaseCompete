@@ -37,7 +37,7 @@ typedef struct ParserContext {
     //size_t condition_composite_num[MAX_NUM];
   Condition_Composite condition_composites[MAX_NUM];
   
-  Expression exp_array[MAX_NUM * 2];
+  Expression exp_array[MAX_NUM * 4];
   size_t exp_num;
   
 } ParserContext;
@@ -662,8 +662,18 @@ expression:
         $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
     }
     | LBRACE expression RBRACE {
+        Expression exp_node;
+        expression_init_node(&exp_node, $2,NULL,CAL_SELF);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_node;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+        //show_expression(&CONTEXT->exp_array[(CONTEXT->exp_num) - 1]);
+    }
+    |SUB LBRACE expression RBRACE %prec UMINUS{
     
-        $$ = $2;
+        Expression exp_node;
+        expression_init_node(&exp_node, $3,NULL,CAL_MINUS);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_node;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
         //show_expression(&CONTEXT->exp_array[(CONTEXT->exp_num) - 1]);
     }
     | expression ADD expression{

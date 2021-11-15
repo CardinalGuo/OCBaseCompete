@@ -660,6 +660,87 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
 
         switch (expression->calculate)
         {
+        case CAL_SELF:
+        {
+            res_type = attr_left;
+            for (size_t i = 0; i < left.size(); i++)
+            {
+                void *value;
+                res_type = attr_left;
+                switch (res_type)
+                {
+                case INTS:
+                {
+                    value = malloc(sizeof(int));
+                    memcpy(value, left[i], sizeof(int));
+                }
+                break;
+                case FLOATS:
+                {
+                    value = malloc(sizeof(float));
+                    memcpy(value, left[i], sizeof(int));
+                }
+                break;
+                case CHARS:
+                {
+                    value = strdup((char *)left[i]);
+                }
+                break;
+                case DATES:
+                {
+                    value = malloc(sizeof(int));
+                    memcpy(value, left[i], sizeof(int));
+                }
+                break;
+                case NULL_TYPE:
+                {
+                }
+                break;
+                default:
+                    break;
+                }
+                values_vec.push_back(value);
+            }
+        }
+        break;
+        case CAL_MINUS:
+        {
+
+            
+            res_type = attr_left;
+            for (size_t i = 0; i < left.size(); i++)
+            {
+                void *value;
+                if (attr_left == NULL_TYPE)
+                {
+                    break;
+                }
+
+                if (attr_left != FLOATS && attr_left != INTS)
+                {
+                    finish = false;
+                    break;
+                }
+                else
+                {
+
+                    if (attr_left == FLOATS)
+                    {
+                        value = malloc(sizeof(float));
+                        float tmp_float = -1.0 * (*(float *)left[i]);
+                        memcpy(value, &tmp_float, sizeof(tmp_float));
+                    }
+                    else
+                    {
+                        value = malloc(sizeof(int));
+                        int tmp_int = -1.0 * (*(int *)left[i]);
+                        memcpy(value, &tmp_int, sizeof(tmp_int));
+                    }
+                }
+                values_vec.push_back(value);
+            }
+        }
+        break;
         case CAL_COUNT:
         {
             void *value;
@@ -1039,12 +1120,90 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
         //LOG_INOF("type  %d %d", attr_left, attr_right);
         switch (expression->calculate)
         {
+        case CAL_SELF:
+        {
+            void *value;
+            res_attr = attr_left;
+            switch (res_attr)
+            {
+            case INTS:
+            {
+                value = malloc(sizeof(int));
+                memcpy(value, left[0], sizeof(int));
+            }
+            break;
+            case FLOATS:
+            {
+                value = malloc(sizeof(float));
+                memcpy(value, left[0], sizeof(int));
+            }
+            break;
+            case CHARS:
+            {
+                value = strdup((char *)left[0]);
+            }
+            break;
+            case DATES:
+            {
+                value = malloc(sizeof(int));
+                memcpy(value, left[0], sizeof(int));
+            }
+            break;
+            case NULL_TYPE:
+            {
+            }
+            break;
+            default:
+                break;
+            }
+            res_vec.push_back(value);
+        }
+        break;
+        case CAL_MINUS:
+        {
+
+            void *value;
+            res_attr = attr_left;
+            if (attr_left == NULL_TYPE)
+            {
+                break;
+            }
+
+            if (attr_left != FLOATS && attr_left != INTS)
+            {
+                finish = false;
+                break;
+            }
+            else
+            {
+
+                if (attr_left == FLOATS)
+                {
+                    value = malloc(sizeof(float));
+                    float tmp_float = -1.0 * (*(float *)left[0]);
+                    memcpy(value, &tmp_float, sizeof(tmp_float));
+                }
+                else
+                {
+                    value = malloc(sizeof(int));
+                    int tmp_int = -1.0 * (*(int *)left[0]);
+                    memcpy(value, &tmp_int, sizeof(tmp_int));
+                }
+            }
+            res_vec.push_back(value);
+        }
+        break;
 
         case CAL_ADD:
         case CAL_SUB:
         case CAL_MUL:
         case CAL_DIV:
         {
+            if (attr_left == NULL_TYPE || attr_right == NULL_TYPE)
+            {
+                res_attr = NULL_TYPE;
+                break;
+            }
             ////LOG_INOF("%d %d", attr_left, attr_right);
             if (attr_left == UNDEFINED || attr_right == UNDEFINED)
             {
@@ -1100,7 +1259,7 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
                 case CAL_DIV:
                     if (l_f == 0.0)
                     {
-                        finish = false;
+                        res_attr = NULL_TYPE;
                         break;
                     }
                     else
@@ -1142,7 +1301,8 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
                     int r_v = *(int *)right[0];
                     if (r_v == 0)
                     {
-                        finish = false;
+                        res_attr = NULL_TYPE;
+
                         break;
                     }
                     else
@@ -1333,7 +1493,15 @@ void SelectExe::get_expression_name(std::string &str_name, Expression *expressio
 
         switch (expression->calculate)
         {
-
+        case CAL_MINUS:
+            str_name.append("-");
+            get_expression_name(str_name, expression->left, deep + 1);
+            break;
+        case CAL_SELF:
+            str_name.append("(");
+            get_expression_name(str_name, expression->left, deep + 1);
+            str_name.append(")");
+            break;
         case CAL_ADD:
             get_expression_name(str_name, expression->left, deep + 1);
             str_name.append("+");
@@ -1720,7 +1888,19 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     //LOG_INOF("Type %d %d %d", left_attr, right_attr, type_ok);
     LOG_INFO("type_ok %d type left %d right %d  %d  %d", type_ok, left_attr, right_attr, (int)left.size(), (int)right.size());
     //check left_res can do with right_res
-    if (left_attr != right_attr && left_attr != NULL_TYPE && right_attr != NULL_TYPE)
+    if (left_attr == NULL_TYPE || right_attr == NULL_TYPE)
+    {
+        is_ok = false;
+    }
+
+    if (!is_ok)
+    {
+        free_vector(left);
+        free_vector(right);
+        return rc;
+    }
+
+    if (left_attr != right_attr)
     {
         if (!((left_attr == INTS && right_attr == FLOATS) || (left_attr == FLOATS && right_attr == INTS) || (left_attr == DATES && right_attr == CHARS) || (left_attr == CHARS && right_attr == DATES)))
         {
