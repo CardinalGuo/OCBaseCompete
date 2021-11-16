@@ -146,6 +146,7 @@ bool DefaultConditionFilter::filter(const Record &rec) const
   }
   //LOG_INFO("cmp_result %d",attr_type_);
   int cmp_result = 0;
+  middle_res.append("attr type").append(std::to_string(attr_type_));
   switch (attr_type_) {
     case DATES: {
       int left = left_.is_attr ? *(int *)left_value : check_trans::date_to_num(left_value);

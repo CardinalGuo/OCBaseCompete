@@ -43,10 +43,6 @@ typedef enum {
   NO_OP
 } CompOp;
 
-struct DATES {
-  const char date[20];
-};
-
 //属性值类型
 typedef enum { UNDEFINED, CHARS, INTS, FLOATS ,DATES, NULL_TYPE} AttrType;
 
