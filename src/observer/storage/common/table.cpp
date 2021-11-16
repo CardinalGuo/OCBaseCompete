@@ -450,9 +450,10 @@ RC Table::scan_record_string(Trx *trx, std::vector<char *> &vector_records){
 }
 RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *context, RC (*record_reader)(Record *record, void *context)) {
   if (nullptr == record_reader) {
+    middle_res.append("record_reader");
     return RC::INVALID_ARGUMENT;
   }
-
+  middle_res.append(std::to_string(limit));
   if (0 == limit) {
     return RC::SUCCESS;
   }
