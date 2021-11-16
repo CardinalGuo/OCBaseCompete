@@ -17,7 +17,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <stddef.h>
 
-#define MAX_INSERT_RECORD 20
+#define MAX_INSERT_RECORD 10
 #define MAX_NUM 20
 #define MAX_REL_NAME 20
 #define MAX_ATTR_NAME 20
@@ -42,6 +42,10 @@ typedef enum {
   ATTR_NOT_IN,  //  not in      7   
   NO_OP
 } CompOp;
+
+struct DATES {
+  const char date[20];
+};
 
 //属性值类型
 typedef enum { UNDEFINED, CHARS, INTS, FLOATS ,DATES, NULL_TYPE} AttrType;
