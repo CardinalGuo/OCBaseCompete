@@ -301,7 +301,7 @@ RC RecordPageHandler::get_next_record(Record *rec) {
 
   char *record_data = page_handle_.frame->page.data +
       page_header_->first_record_offset + (index * page_header_->record_size);
-  middle_res.append(std::to_string(*(int*)(record_data+4))).append("\n");
+  middle_res.append(std::to_string(*(int*)(record_data+4))).append(std::to_string(*(int*)(record_data+8))).append("\n");
   rec->data = record_data;
   return RC::SUCCESS;
 }
