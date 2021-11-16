@@ -146,12 +146,11 @@ bool DefaultConditionFilter::filter(const Record &rec) const
   }
   //LOG_INFO("cmp_result %d",attr_type_);
   int cmp_result = 0;
-
   switch (attr_type_) {
     case DATES: {
       int left = left_.is_attr ? *(int *)left_value : check_trans::date_to_num(left_value);
       int right = right_.is_attr ? *(int *)right_value : check_trans::date_to_num(right_value);
-
+      LOG_INFO("delete cmp date %d %d",left,right);
       cmp_result = (int)((left - right == 0) ? 0 : (left - right > 0 ? 1 : -1));
       
     }break;

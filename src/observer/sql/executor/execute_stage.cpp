@@ -700,7 +700,7 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
 
   rc = select_exe.terminal_select(select_ress, types, select_res_fields);
 
-  LOG_INFO("cal sum res %d", rc);
+  LOG_INFO("cal sum res");
   int sum = 0;
   for (auto it : select_ress)
   {
