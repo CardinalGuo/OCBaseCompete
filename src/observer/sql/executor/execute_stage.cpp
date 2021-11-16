@@ -247,9 +247,9 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 
 // RC ExecuteStage::check_attri_valid(RelAttr attr, Selects selects, Db *db){
 //   bool exist = false;
-//   //LOG_INFO("check_attri");
+//   ////LOG_INFO("check_attri");
 //   if (attr.relation_name == nullptr){
-//     //LOG_INFO("check_ nullptr");
+//     ////LOG_INFO("check_ nullptr");
 //     for (size_t i = 0; i < selects.relation_num; i++){
 //       Table *table = db->find_table(selects.relations[i]);
 //       if (strcmp(attr.attribute_name, "*") == 0 ) return RC::SUCCESS;
@@ -260,7 +260,7 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //       }
 //     }
 //   }else{
-//     //LOG_INFO("check_attri rela");
+//     ////LOG_INFO("check_attri rela");
 //     for (size_t i = 0; i < selects.relation_num; i++){
 //       if (0 == strcmp(attr.relation_name, selects.relations[i])){
 //         Table *table = db->find_table(selects.relations[i]);
@@ -284,7 +284,7 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //       Table *table = db->find_table(relations[i]);
 //       const FieldMeta* fieldmeta = table->table_meta().field(condition.left_attr.attribute_name);
 //       if (fieldmeta != nullptr){
-//         LOG_INFO("%s",fieldmeta->name());
+//         //LOG_INFO("%s",fieldmeta->name());
 //         tp_left = fieldmeta->type();
 //       }
 //     }
@@ -306,11 +306,11 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //   }
 
 //   if ((tp_left == DATES) && !condition.right_is_attr){
-//     //LOG_INFO("%d",tp_left);
+//     ////LOG_INFO("%d",tp_left);
 //     if(!check_trans::check_date( (char *)condition.right_value.data)) return RC::INVALID_ARGUMENT;
 //   }
 //   if ((tp_right == DATES) && !condition.left_is_attr){
-//     //LOG_INFO("%d",tp_right);
+//     ////LOG_INFO("%d",tp_right);
 //     if(!check_trans::check_date( (char *)condition.left_value.data)) return RC::INVALID_ARGUMENT;
 //   }
 
@@ -341,7 +341,7 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //   Table *table;
 //   if (attr.relation_name == nullptr){
 //     for (size_t i = 0; i < selects.relation_num; i++){
-//       //LOG_INFO("check aggra %s %s", attr.relation_name, selects.relations[i]);
+//       ////LOG_INFO("check aggra %s %s", attr.relation_name, selects.relations[i]);
 //       Table *table_tmp = db->find_table(selects.relations[i]);
 //       const FieldMeta* fieldmeta = table_tmp->table_meta().field(attr.attribute_name);
 //       if (fieldmeta != nullptr){
@@ -351,7 +351,7 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //     }
 //   }else{
 //     for (size_t i = 0; i < selects.relation_num; i++){
-//       //LOG_INFO("check aggra %s %s", attr.relation_name, selects.relations[i]);
+//       ////LOG_INFO("check aggra %s %s", attr.relation_name, selects.relations[i]);
 //       if (0 == strcmp(attr.relation_name, selects.relations[i])){
 //         table = db->find_table(selects.relations[i]);
 //         break;
@@ -365,14 +365,14 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //   }else if(strcmp("AVG",attr.extra_attribute_name)==0){
 //     if (type == CHARS || type == DATES) rc = RC::INVALID_ARGUMENT;
 //   }
-//   //LOG_INFO("check aggra ok");
+//   ////LOG_INFO("check aggra ok");
 //   return rc;
 // }
 
 //flag = 1 table_size = 1
 // void insert_field_from_table(std::unordered_map<std::string, AttrType> &field_set, Table *table, int flag){
 //   const char *table_name = table->name();
-//   //LOG_INFO("%s",table_name);
+//   ////LOG_INFO("%s",table_name);
 //   const TableMeta &table_meta = table->table_meta();
 //   const int field_num = table_meta.field_num();
 //   std::string str_name = "";
@@ -382,7 +382,7 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //       str_name = "";
 //       str_name.append(table_name).append(".").append(field_meta->name());
 //       field_set[str_name] = field_meta->type();
-//       //LOG_INFO("%s",str_name.c_str());
+//       ////LOG_INFO("%s",str_name.c_str());
 //       if (flag){
 //         str_name = "";
 //         str_name.append(field_meta->name());
@@ -439,7 +439,7 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 
 //   RC rc = RC::SUCCESS;
 
-//   LOG_INFO("check table");
+//   //LOG_INFO("check table");
 //   for (size_t i = 0; i < selects.relation_num; i++){
 //     if (nullptr == datebase->find_table(selects.relations[i])) return RC::INVALID_ARGUMENT;
 //   }
@@ -457,12 +457,12 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //     }
 //   }
 
-//   LOG_INFO("check_join %d", selects.join_num_max - 1);
+//   //LOG_INFO("check_join %d", selects.join_num_max - 1);
 //   for (int i = selects.join_num_max - 1; i >= 0; i--){
 //     Table *table = datebase->find_table(selects.join_on[i].relation_name);
 //     std::string str_name = "";
 //     str_name.append(selects.join_on[i].relation_name).append(".").append("*");
-//     //LOG_INFO("%s",str_name.c_str());
+//     ////LOG_INFO("%s",str_name.c_str());
 //     if (field_set.find(str_name) != field_set.end()) return RC::INVALID_ARGUMENT;
 //     insert_field_from_table(field_set,table,0);
 //     rc = check_join(field_set, &selects.join_on[i],datebase);
@@ -470,24 +470,24 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //   }
 
 //   // for (auto it : field_set){
-//   //   LOG_INFO("%s",it.first.c_str());
+//   //   //LOG_INFO("%s",it.first.c_str());
 //   // }
 
-//   LOG_INFO("check show_select");
+//   //LOG_INFO("check show_select");
 //   for (size_t i = 0; i < selects.expression_select_num; i++){
 //     Expression *expre_tmp = selects.expression_select[i];
 //     rc = check_expression(field_set, expre_tmp);
 //     if (rc != SUCCESS) return RC::INVALID_ARGUMENT;
 //   }
 
-//   LOG_INFO("check condition %d", selects.condition_num);
+//   //LOG_INFO("check condition %d", selects.condition_num);
 //   for (size_t i = 0; i < selects.condition_num ; i++){
 //     Condition_Composite *condition = selects.conditions[i];
 //     rc = check_condition_valid(condition, field_set, datebase);
 //     if (rc != SUCCESS) return RC::INVALID_ARGUMENT;
 //   }
 
-//   LOG_INFO("check group");
+//   //LOG_INFO("check group");
 //   const GroupBy *groupby = &selects.group_by;
 //   for (size_t i = 0;i < groupby->attr_num;i++){
 //     const RelAttr *relattr = &groupby->attributes[i];
@@ -497,7 +497,7 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //     if (field_set.find(str_name) == field_set.end()) return RC::INVALID_ARGUMENT;
 //   }
 
-//   LOG_INFO("check order");
+//   //LOG_INFO("check order");
 //   const OrderBy *orderby = &selects.order_by;
 //   for (size_t i = 0;i < orderby->attr_num;i++){
 //     const RelAttr *relattr = &orderby->attributes[i];
@@ -531,7 +531,7 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //       std::string name_right = condition_tmp.right_attr.relation_name;
 //       name_right.append(".").append(condition_tmp.right_attr.attribute_name);
 //       int index_right = schema_map[name_right];
-//       //LOG_INFO("doing compare");
+//       ////LOG_INFO("doing compare");
 //       int cmp_result = values[index_left]->compare(*values[index_right]);
 
 //       switch (condition_tmp.comp) {
@@ -576,7 +576,7 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //     TupleSchema schema_tmp = tuplesets[i].get_schema();
 //     size_t fields_size = schema_tmp.fields().size();
 //     for (size_t j = 0; j < fields_size; j++){
-//       //LOG_INFO("%s %s",schema_tmp.field(j).table_name(),schema_tmp.field(j).field_name());
+//       ////LOG_INFO("%s %s",schema_tmp.field(j).table_name(),schema_tmp.field(j).field_name());
 
 //       if (schema_out.add_if_not_exists_return(schema_tmp.field(j).type(), schema_tmp.field(j).table_name(), schema_tmp.field(j).field_name(), schema_tmp.field(j).calcu_name())){
 //         std::string str = schema_tmp.field(j).table_name();
@@ -637,12 +637,12 @@ void end_trx_if_need(Session *session, Trx *trx, bool all_right)
 //       if(orderby->attributes[i].relation_name != nullptr) name.append(orderby->attributes[i].relation_name).append(".");
 //       name.append(orderby->attributes[i].attribute_name);
 
-//       //LOG_INFO("%s", name.c_str());
+//       ////LOG_INFO("%s", name.c_str());
 //       Schema_Info schema_tmp = table_map.find(name)->second;
 //       int attr_offset = schema_tmp.offset;
 //       AttrType type_tmp = schema_tmp.type;
 
-//       //LOG_INFO("%d %d",attr_offset, type_tmp);
+//       ////LOG_INFO("%d %d",attr_offset, type_tmp);
 //       char *left_value = left + attr_offset;
 //       char *right_value = right + attr_offset;
 
@@ -700,21 +700,12 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
 
   rc = select_exe.terminal_select(select_ress, types, select_res_fields);
 
-  LOG_INFO("cal sum res");
-  int sum = 0;
-  for (auto it : select_ress)
-  {
-    for (auto jt : it)
-    {
-      LOG_INFO("data %d %d", sum++, *(int *)jt);
-    }
-  }
   if (rc != SUCCESS)
   {
     session_event->set_response("FAILURE\n");
     return rc;
   }
-  LOG_INFO("out stream field");
+  //LOG_INFO("out stream field");
   std::stringstream ss;
 
   for (int i = 0; i < select_res_fields.size(); i++)
@@ -724,7 +715,7 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
       ss << " | ";
   }
   ss << std::endl;
-  LOG_INFO("out stream ress %d", (int)select_ress.size());
+  //LOG_INFO("out stream ress %d", (int)select_ress.size());
 
   if (select_ress.size() != 0)
   {
@@ -736,7 +727,7 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
         size = (int)select_ress[i].size();
       }
     }
-    LOG_INFO("size %d %d", (int)select_ress.size(), (int)select_ress[0].size());
+    //LOG_INFO("size %d %d", (int)select_ress.size(), (int)select_ress[0].size());
     for (int i = 0; i < size; i++)
     {
       for (int j = 0; j < select_ress.size(); j++)
@@ -816,7 +807,7 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
   //   char *trx = it + 0;
   //   char *value = it + 4;
   //   char *dd = it + 20;
-  //   LOG_INFO("%d %d %d",*trx,*value,*dd);
+  //   //LOG_INFO("%d %d %d",*trx,*value,*dd);
   // }
   // select_exe.do_order_by(*vec_records,selects);
 
@@ -824,7 +815,7 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
   //   char *trx = it + 0;
   //   char *value = it + 4;
   //   char *dd = it + 20;
-  //   LOG_INFO("%d %d %d",*trx,*value,*dd);
+  //   //LOG_INFO("%d %d %d",*trx,*value,*dd);
   // }
 
   // select_exe.do_group_by(*vec_records, selects);
@@ -832,7 +823,7 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
   // int sum = 1;
   // for (auto it : select_exe.group_index_result){
   //   for(auto jt : it){
-  //     LOG_INFO("%d %d",sum,jt);
+  //     //LOG_INFO("%d %d",sum,jt);
   //   }
   //   sum++;
   // }
@@ -912,9 +903,9 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
   //   } else {
   //     // TupleSchema ts = tuple_set.schema();
   //     //   for(const auto &field: ts.fields()){
-  //     //     LOG_INFO("%s %s %s",field.calcu_name(),field.field_name(),field.table_name());
+  //     //     //LOG_INFO("%s %s %s",field.calcu_name(),field.field_name(),field.table_name());
   //     //     }
-  //     //LOG_INFO(" 123123");
+  //     ////LOG_INFO(" 123123");
   //     tuple_set.check_calculate();
   //     sets_size++;
   //     tuple_sets.push_back(std::move(tuple_set));
@@ -951,7 +942,7 @@ static RC schema_add_field(Table *table, const char *field_name, TupleSchema &sc
   const FieldMeta *field_meta = table->table_meta().field(field_name);
   if (nullptr == field_meta && (0 != strcmp(field_name, "COUNT")))
   {
-    LOG_INFO("No such field. %s.%s", table->name(), field_name);
+    //LOG_INFO("No such field. %s.%s", table->name(), field_name);
     return RC::SCHEMA_FIELD_MISSING;
   }
   if (0 == strcmp(field_name, "COUNT"))
@@ -992,7 +983,7 @@ RC create_selection_executor(Trx *trx, const Selects &selects, const char *db, c
   //   Condition condition_tmp = selects.conditions[i];
   //   if (condition_tmp.left_is_attr && condition_tmp.right_is_attr){
   //     if (0 != strcmp(condition_tmp.left_attr.relation_name, condition_tmp.right_attr.relation_name)){
-  //       //LOG_INFO("%s %s %s %s",condition_tmp.left_attr.relation_name, condition_tmp.left_attr.attribute_name, condition_tmp.right_attr.relation_name, condition_tmp.right_attr.attribute_name);
+  //       ////LOG_INFO("%s %s %s %s",condition_tmp.left_attr.relation_name, condition_tmp.left_attr.attribute_name, condition_tmp.right_attr.relation_name, condition_tmp.right_attr.attribute_name);
 
   //       if (0 == strcmp(condition_tmp.left_attr.relation_name, table_name)){
 
@@ -1008,12 +999,12 @@ RC create_selection_executor(Trx *trx, const Selects &selects, const char *db, c
   //           return rc;
   //         }
   //       }
-  //       //LOG_INFO("%s %s %s %s",condition_tmp.left_attr.relation_name, condition_tmp.left_attr.attribute_name, condition_tmp.right_attr.relation_name, condition_tmp.right_attr.attribute_name);
+  //       ////LOG_INFO("%s %s %s %s",condition_tmp.left_attr.relation_name, condition_tmp.left_attr.attribute_name, condition_tmp.right_attr.relation_name, condition_tmp.right_attr.attribute_name);
 
   //     }
   //   }
   // }
-  // //LOG_INFO(")addddd okkk");
+  // ////LOG_INFO(")addddd okkk");
 
   // // 找出仅与此表相关的过滤条件, 或者都是值的过滤条件
   // std::vector<DefaultConditionFilter *> condition_filters;

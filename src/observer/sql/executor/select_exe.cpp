@@ -660,6 +660,86 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
 
         switch (expression->calculate)
         {
+        case CAL_SELF:
+        {
+            res_type = attr_left;
+            for (size_t i = 0; i < left.size(); i++)
+            {
+                void *value;
+                res_type = attr_left;
+                switch (res_type)
+                {
+                case INTS:
+                {
+                    value = malloc(sizeof(int));
+                    memcpy(value, left[i], sizeof(int));
+                }
+                break;
+                case FLOATS:
+                {
+                    value = malloc(sizeof(float));
+                    memcpy(value, left[i], sizeof(int));
+                }
+                break;
+                case CHARS:
+                {
+                    value = strdup((char *)left[i]);
+                }
+                break;
+                case DATES:
+                {
+                    value = malloc(sizeof(int));
+                    memcpy(value, left[i], sizeof(int));
+                }
+                break;
+                case NULL_TYPE:
+                {
+                }
+                break;
+                default:
+                    break;
+                }
+                values_vec.push_back(value);
+            }
+        }
+        break;
+        case CAL_MINUS:
+        {
+
+            res_type = attr_left;
+            for (size_t i = 0; i < left.size(); i++)
+            {
+                void *value;
+                if (attr_left == NULL_TYPE)
+                {
+                    break;
+                }
+
+                if (attr_left != FLOATS && attr_left != INTS)
+                {
+                    finish = false;
+                    break;
+                }
+                else
+                {
+
+                    if (attr_left == FLOATS)
+                    {
+                        value = malloc(sizeof(float));
+                        float tmp_float = -1.0 * (*(float *)left[i]);
+                        memcpy(value, &tmp_float, sizeof(tmp_float));
+                    }
+                    else
+                    {
+                        value = malloc(sizeof(int));
+                        int tmp_int = -1.0 * (*(int *)left[i]);
+                        memcpy(value, &tmp_int, sizeof(tmp_int));
+                    }
+                }
+                values_vec.push_back(value);
+            }
+        }
+        break;
         case CAL_COUNT:
         {
             void *value;
@@ -1039,12 +1119,90 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
         //LOG_INOF("type  %d %d", attr_left, attr_right);
         switch (expression->calculate)
         {
+        case CAL_SELF:
+        {
+            void *value;
+            res_attr = attr_left;
+            switch (res_attr)
+            {
+            case INTS:
+            {
+                value = malloc(sizeof(int));
+                memcpy(value, left[0], sizeof(int));
+            }
+            break;
+            case FLOATS:
+            {
+                value = malloc(sizeof(float));
+                memcpy(value, left[0], sizeof(int));
+            }
+            break;
+            case CHARS:
+            {
+                value = strdup((char *)left[0]);
+            }
+            break;
+            case DATES:
+            {
+                value = malloc(sizeof(int));
+                memcpy(value, left[0], sizeof(int));
+            }
+            break;
+            case NULL_TYPE:
+            {
+            }
+            break;
+            default:
+                break;
+            }
+            res_vec.push_back(value);
+        }
+        break;
+        case CAL_MINUS:
+        {
+
+            void *value;
+            res_attr = attr_left;
+            if (attr_left == NULL_TYPE)
+            {
+                break;
+            }
+
+            if (attr_left != FLOATS && attr_left != INTS)
+            {
+                finish = false;
+                break;
+            }
+            else
+            {
+
+                if (attr_left == FLOATS)
+                {
+                    value = malloc(sizeof(float));
+                    float tmp_float = -1.0 * (*(float *)left[0]);
+                    memcpy(value, &tmp_float, sizeof(tmp_float));
+                }
+                else
+                {
+                    value = malloc(sizeof(int));
+                    int tmp_int = -1.0 * (*(int *)left[0]);
+                    memcpy(value, &tmp_int, sizeof(tmp_int));
+                }
+            }
+            res_vec.push_back(value);
+        }
+        break;
 
         case CAL_ADD:
         case CAL_SUB:
         case CAL_MUL:
         case CAL_DIV:
         {
+            if (attr_left == NULL_TYPE || attr_right == NULL_TYPE)
+            {
+                res_attr = NULL_TYPE;
+                break;
+            }
             ////LOG_INOF("%d %d", attr_left, attr_right);
             if (attr_left == UNDEFINED || attr_right == UNDEFINED)
             {
@@ -1100,7 +1258,7 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
                 case CAL_DIV:
                     if (l_f == 0.0)
                     {
-                        finish = false;
+                        res_attr = NULL_TYPE;
                         break;
                     }
                     else
@@ -1142,7 +1300,8 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
                     int r_v = *(int *)right[0];
                     if (r_v == 0)
                     {
-                        finish = false;
+                        res_attr = NULL_TYPE;
+
                         break;
                     }
                     else
@@ -1292,7 +1451,10 @@ void SelectExe::get_expression_name(std::string &str_name, Expression *expressio
             }
             else
             {
-                str_name.append(name);
+                if (select->relation_num == 1 && select->join_num_max == 0)
+                    str_name.append(expression->attr.attribute_name);
+                else
+                    str_name.append(name);
             }
         }
         else
@@ -1333,7 +1495,17 @@ void SelectExe::get_expression_name(std::string &str_name, Expression *expressio
 
         switch (expression->calculate)
         {
-
+        case CAL_MINUS:
+            str_name.append("-");
+            str_name.append("(");
+            get_expression_name(str_name, expression->left, deep + 1);
+            str_name.append(")");
+            break;
+        case CAL_SELF:
+            str_name.append("(");
+            get_expression_name(str_name, expression->left, deep + 1);
+            str_name.append(")");
+            break;
         case CAL_ADD:
             get_expression_name(str_name, expression->left, deep + 1);
             str_name.append("+");
@@ -1444,7 +1616,7 @@ RC SelectExe::terminal_select(std::vector<std::vector<void *>> &select_ress, std
     {
         return rc;
     }
-    show_schame_map();
+    //show_schame_map();
 
     if (select->join_num_max == 0)
     {
@@ -1462,7 +1634,7 @@ RC SelectExe::terminal_select(std::vector<std::vector<void *>> &select_ress, std
             {
                 return rc;
             }
-            show_schame_map();
+            //show_schame_map();
             tables_records.push_back(table_records);
             rc = combain_table(0, i);
             if (rc != SUCCESS)
@@ -1486,7 +1658,7 @@ RC SelectExe::terminal_select(std::vector<std::vector<void *>> &select_ress, std
                 if (!is_ok)
                 {
                     //free(*itr);
-                    tables_records[0].erase(itr);
+                    //tables_records[0].erase(itr);
                     break;
                 }
             }
@@ -1502,7 +1674,7 @@ RC SelectExe::terminal_select(std::vector<std::vector<void *>> &select_ress, std
 
     do_group_by(vec_records);
 
-    //LOG_INOF("prepare res");
+    //LOG_INFO("prepare res");
 
     rc = calculate_result();
     if (rc != SUCCESS)
@@ -1513,7 +1685,7 @@ RC SelectExe::terminal_select(std::vector<std::vector<void *>> &select_ress, std
         free_vector(vec_records);
 
     load_terminal_fields();
-
+    //LOG_INFO("prepare res ok");
     return rc;
 }
 
@@ -1602,12 +1774,15 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     RC rc = RC::SUCCESS;
     std::vector<void *> left, right;
     AttrType left_attr, right_attr;
-    std::vector<std::vector<void *>> select_res_left,select_res_right;
+    std::vector<std::vector<void *>> select_res_left, select_res_right;
     bool type_ok = true;
     if (condition->left != nullptr)
         calculate_con_expression(left, condition->left, left_attr, data_res);
     if (condition->right != nullptr)
+    {
         calculate_con_expression(right, condition->right, right_attr, data_res);
+        //LOG_INFO("right is not nullptr");
+    }
     if (condition->select_attr_left != nullptr)
     {
 
@@ -1624,8 +1799,15 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
         }
         else
         {
-            left_attr = condition_select_attrs[0];
-            if (left_attr == UNDEFINED || select_res_left.size() > 1 || select_res_left[0].size() > 1)
+            if (condition_select_attrs.size() > 0)
+            {
+                left_attr = condition_select_attrs[0];
+            }
+            else
+            {
+                left_attr = NULL_TYPE;
+            }
+            if (left_attr == UNDEFINED || select_res_left.size() > 1)
             {
                 type_ok = false;
                 for (size_t i = 0; i < select_res_left.size(); i++)
@@ -1636,7 +1818,14 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
             }
             else
             {
-                left.push_back(select_res_left[0][0]);
+                if (select_res_left.size() > 0)
+                {
+                    for (size_t i = 0; i < select_res_left[0].size(); i++)
+                    {
+                        //LOG_INFO("left_res is not empty");
+                        left.push_back(select_res_left[0][i]);
+                    }
+                }
             }
         }
     }
@@ -1656,13 +1845,21 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
         std::vector<std::string> condition_select_fields;
 
         rc = sel_exe.terminal_select(select_res_right, condition_select_attrs, condition_select_fields);
+        //LOG_INFO("doint backtrac ok %d %d", (int)condition_select_attrs.size(), rc);
         if (rc != RC::SUCCESS)
         {
             type_ok = false;
         }
         else
         {
-            right_attr = condition_select_attrs[0];
+            if (condition_select_attrs.empty())
+            {
+                right_attr = NULL_TYPE;
+            }
+            else
+            {
+                right_attr = condition_select_attrs[0];
+            }
             if (right_attr == UNDEFINED || select_res_right.size() > 1)
             {
                 type_ok = false;
@@ -1674,9 +1871,13 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
             }
             else
             {
-                for (size_t i = 0; i < select_res_right[0].size(); i++)
+                if (select_res_right.size() > 0)
                 {
-                    right.push_back(select_res_right[0][i]);
+                    for (size_t i = 0; i < select_res_right[0].size(); i++)
+                    {
+                        //LOG_INFO("right_res is not empty");
+                        right.push_back(select_res_right[0][i]);
+                    }
                 }
             }
         }
@@ -1689,9 +1890,10 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
         return RC::INVALID_ARGUMENT;
     }
     //LOG_INOF("Type %d %d %d", left_attr, right_attr, type_ok);
-
+    //LOG_INFO("type_ok %d type left %d right %d  %d  %d", type_ok, left_attr, right_attr, (int)left.size(), (int)right.size());
     //check left_res can do with right_res
-    if (left_attr != right_attr)
+
+    if (left_attr != right_attr && left_attr != NULL_TYPE && right_attr != NULL_TYPE)
     {
         if (!((left_attr == INTS && right_attr == FLOATS) || (left_attr == FLOATS && right_attr == INTS) || (left_attr == DATES && right_attr == CHARS) || (left_attr == CHARS && right_attr == DATES)))
         {
@@ -1712,20 +1914,28 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     {
         if (condition->comp == ATTR_IN)
         {
-            is_ok = false;
-            for (auto it : right)
+            if (right_attr == NULL_TYPE || left_attr == NULL_TYPE)
             {
-
-                rc = select_value_compare(left[0], it, left_attr, right_attr, cmp_result);
-                if (cmp_result == 0)
+                is_ok = false;
+            }
+            else
+            {
+                is_ok = false;
+                for (auto it : right)
                 {
-                    is_ok = true;
-                    break;
+
+                    rc = select_value_compare(left[0], it, left_attr, right_attr, cmp_result);
+                    if (cmp_result == 0)
+                    {
+                        is_ok = true;
+                        break;
+                    }
                 }
             }
         }
         else
         {
+            is_ok = true;
             for (auto it : right)
             {
                 rc = select_value_compare(left[0], it, left_attr, right_attr, cmp_result);
@@ -1739,84 +1949,95 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     }
     else
     {
-        rc = select_value_compare(left[0], right[0], left_attr, right_attr, cmp_result);
-        ////LOG_INOF("%d cmp_Res %d", condition->comp, cmp_result);
-        switch (condition->comp)
+        if (left.empty() || right.empty() || left_attr == NULL_TYPE || right_attr == NULL_TYPE)
         {
-        case EQUAL_TO:
-        {
-            if (0 == cmp_result)
-            {
-                is_ok = true;
-            }
-            else
-            {
-                is_ok = false;
-            }
+            is_ok = false;
         }
-        break;
-        case LESS_EQUAL:
+        else
         {
-            if (cmp_result <= 0)
+            if (left.size() > 1 || right.size() > 1)
+                rc = RC::INVALID_ARGUMENT;
+            if (rc != RC::SUCCESS)
+                return rc;
+            rc = select_value_compare(left[0], right[0], left_attr, right_attr, cmp_result);
+            ////LOG_INOF("%d cmp_Res %d", condition->comp, cmp_result);
+            switch (condition->comp)
             {
-                is_ok = true;
-            }
-            else
+            case EQUAL_TO:
             {
-                is_ok = false;
+                if (0 == cmp_result)
+                {
+                    is_ok = true;
+                }
+                else
+                {
+                    is_ok = false;
+                }
             }
-        }
-        break;
-        case NOT_EQUAL:
-        {
-            if (cmp_result != 0)
-            {
-                is_ok = true;
-            }
-            else
-            {
-                is_ok = false;
-            }
-        }
-        break;
-        case LESS_THAN:
-        {
-            if (cmp_result < 0)
-            {
-                is_ok = true;
-            }
-            else
-            {
-                is_ok = false;
-            }
-        }
-        break;
-        case GREAT_EQUAL:
-        {
-            if (cmp_result >= 0)
-            {
-                is_ok = true;
-            }
-            else
-            {
-                is_ok = false;
-            }
-        }
-        break;
-        case GREAT_THAN:
-        {
-            if (cmp_result > 0)
-            {
-                is_ok = true;
-            }
-            else
-            {
-                is_ok = false;
-            }
-        }
-        break;
-        default:
             break;
+            case LESS_EQUAL:
+            {
+                if (cmp_result <= 0)
+                {
+                    is_ok = true;
+                }
+                else
+                {
+                    is_ok = false;
+                }
+            }
+            break;
+            case NOT_EQUAL:
+            {
+                if (cmp_result != 0)
+                {
+                    is_ok = true;
+                }
+                else
+                {
+                    is_ok = false;
+                }
+            }
+            break;
+            case LESS_THAN:
+            {
+                if (cmp_result < 0)
+                {
+                    is_ok = true;
+                }
+                else
+                {
+                    is_ok = false;
+                }
+            }
+            break;
+            case GREAT_EQUAL:
+            {
+                if (cmp_result >= 0)
+                {
+                    is_ok = true;
+                }
+                else
+                {
+                    is_ok = false;
+                }
+            }
+            break;
+            case GREAT_THAN:
+            {
+                if (cmp_result > 0)
+                {
+                    is_ok = true;
+                }
+                else
+                {
+                    is_ok = false;
+                }
+            }
+            break;
+            default:
+                break;
+            }
         }
     }
 
@@ -1842,6 +2063,7 @@ RC SelectExe::combain(char *data_res, int table_num, int is_select, int join_num
                 for (int c_i = 0; c_i < select->condition_num; c_i++)
                 {
                     rc = condition_filter(is_ok, select->conditions[c_i], data_res);
+                    //LOG_INFO("condition rc %d", rc);
                     if (rc != RC::SUCCESS)
                     {
                         return rc;
