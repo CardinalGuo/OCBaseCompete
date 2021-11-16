@@ -18,7 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "condition_filter.h"
 
 using namespace common;
-
+extern std::string middle_res;
 struct PageHeader {
   int record_num;  // 当前页面记录的个数
   int record_capacity; // 最大记录个数
@@ -283,7 +283,7 @@ RC RecordPageHandler::get_next_record(Record *rec) {
               page_handle_.frame->page.page_num);
     return RC::RECORD_EOF;
   }
-
+  middle_res.append("vaild slotnum");
   Bitmap bitmap(bitmap_, page_header_->record_capacity);
   int index = bitmap.next_setted_bit(rec->rid.slot_num + 1);
 
@@ -293,8 +293,9 @@ RC RecordPageHandler::get_next_record(Record *rec) {
               page_handle_.frame->page.page_num);
     return RC::RECORD_EOF;
   }
-
+  middle_res.append("There is slot");
   rec->rid.page_num = get_page_num();
+  middle_res.append("get_pagenum -- ");
   rec->rid.slot_num = index;
   // rec->valid = true;
 

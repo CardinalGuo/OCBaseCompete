@@ -477,6 +477,7 @@ RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *contex
   int record_count = 0;
   Record record;
   rc = scanner.get_first_record(&record);
+  middle_res.append("get_first_record ").append(std::to_string(rc)).append(" ");
   for ( ; RC::SUCCESS == rc && record_count < limit; rc = scanner.get_next_record(&record)) {
     if (trx == nullptr || trx->is_visible(this, &record)) {
       rc = record_reader(&record, context);
