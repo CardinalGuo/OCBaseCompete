@@ -464,12 +464,14 @@ RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *contex
 
   IndexScanner *index_scanner = find_index_for_scan(filter);
   if (index_scanner != nullptr) {
+    middle_res.append("index_scanner");
     return scan_record_by_index(trx, index_scanner, filter, limit, context, record_reader);
   }
 
   RC rc = RC::SUCCESS;
   RecordFileScanner scanner;
   rc = scanner.open_scan(*data_buffer_pool_, file_id_, filter);
+  middle_res.append("open_scan");
   if (rc != RC::SUCCESS) {
     LOG_ERROR("failed to open scanner. file id=%d. rc=%d:%s", file_id_, rc, strrc(rc));
     return rc;
