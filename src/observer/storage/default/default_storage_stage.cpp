@@ -184,6 +184,7 @@ void DefaultStorageStage::handle_event(StageEvent *event) {
       const Deletes &deletes = sql->sstr.deletion;
       const char *table_name = deletes.relation_name;
       int deleted_count = 0;
+      middle_res = "";
       rc = handler_->delete_record(current_trx, current_db, table_name, deletes.condition_num, deletes.conditions, &deleted_count);
       snprintf(response, sizeof(response), "%s\n", rc == RC::SUCCESS ? middle_res.c_str() : "FAILURE");
     }
