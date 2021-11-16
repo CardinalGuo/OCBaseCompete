@@ -256,7 +256,7 @@ void DefaultStorageStage::handle_event(StageEvent *event) {
       snprintf(response, sizeof(response), "Unsupported sql: %d\n", sql->flag);
       break;
   }
-
+  middle_res.append("final commit ?? ").append(std::to_string(rc));
   if (rc == RC::SUCCESS && !session->is_trx_multi_operation_mode()) {
     rc = current_trx->commit();
     if (rc != RC::SUCCESS) {
