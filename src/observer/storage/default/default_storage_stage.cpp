@@ -185,7 +185,9 @@ void DefaultStorageStage::handle_event(StageEvent *event) {
       const char *table_name = deletes.relation_name;
       int deleted_count = 0;
       rc = handler_->delete_record(current_trx, current_db, table_name, deletes.condition_num, deletes.conditions, &deleted_count);
-      snprintf(response, sizeof(response), "%s\n", rc == RC::SUCCESS ? "SUCCESS" : "FAILURE");
+      std::string resp = "";
+      resp.append(str::to_string(deleted_count));
+      snprintf(response, sizeof(response), "%s\n", rc == RC::SUCCESS ? resp.c_str() : "FAILURE");
     }
     break;
   case SCF_CREATE_TABLE: { // create table
