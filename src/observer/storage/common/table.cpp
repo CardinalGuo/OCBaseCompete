@@ -486,7 +486,7 @@ RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *contex
       record_count++;
     }
   }
-  middle_res.append(std::to_string(record_count)).append(" ");
+  middle_res.append("record_count").append(std::to_string(record_count)).append(" ");
   if (RC::RECORD_EOF == rc) {
     rc = RC::SUCCESS;
   } else {
@@ -748,7 +748,7 @@ static RC record_reader_delete_adapter(Record *record, void *context) {
 RC Table::delete_record(Trx *trx, ConditionFilter *filter, int *deleted_count) {
   RecordDeleter deleter(*this, trx);
   RC rc = scan_record(trx, filter, -1, &deleter, record_reader_delete_adapter);
-  middle_res.append(std::to_string(deleter.deleted_count())).append("");
+  middle_res.append("deleter_count").append(std::to_string(deleter.deleted_count())).append("");
   if (deleted_count != nullptr) {
     *deleted_count = deleter.deleted_count();
   }
