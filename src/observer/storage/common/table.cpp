@@ -32,7 +32,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/bplus_tree_index.h"
 #include "storage/trx/trx.h"
 #include "storage/common/check_trans.h"
-
+extern std::string middle_res;
 Table::Table() : 
     data_buffer_pool_(nullptr),
     file_id_(-1),
@@ -486,7 +486,7 @@ RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *contex
       record_count++;
     }
   }
-
+  middle_res.append(std::to_string(record_count)).append(" ");
   if (RC::RECORD_EOF == rc) {
     rc = RC::SUCCESS;
   } else {
@@ -748,6 +748,7 @@ static RC record_reader_delete_adapter(Record *record, void *context) {
 RC Table::delete_record(Trx *trx, ConditionFilter *filter, int *deleted_count) {
   RecordDeleter deleter(*this, trx);
   RC rc = scan_record(trx, filter, -1, &deleter, record_reader_delete_adapter);
+  middle_res.append(std::to_string(deleter.deleted_count())).append("");
   if (deleted_count != nullptr) {
     *deleted_count = deleter.deleted_count();
   }
