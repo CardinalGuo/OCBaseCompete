@@ -450,10 +450,10 @@ RC Table::scan_record_string(Trx *trx, std::vector<char *> &vector_records){
 }
 RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *context, RC (*record_reader)(Record *record, void *context)) {
   if (nullptr == record_reader) {
-    middle_res.append("record_reader");
+
     return RC::INVALID_ARGUMENT;
   }
-  middle_res.append(std::to_string(limit));
+
   if (0 == limit) {
     return RC::SUCCESS;
   }
@@ -471,7 +471,7 @@ RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *contex
   RC rc = RC::SUCCESS;
   RecordFileScanner scanner;
   rc = scanner.open_scan(*data_buffer_pool_, file_id_, filter);
-  middle_res.append("open_scan");
+
   if (rc != RC::SUCCESS) {
     LOG_ERROR("failed to open scanner. file id=%d. rc=%d:%s", file_id_, rc, strrc(rc));
     return rc;
@@ -480,7 +480,7 @@ RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *contex
   int record_count = 0;
   Record record;
   rc = scanner.get_first_record(&record);
-  middle_res.append("get_first_record ").append(std::to_string(rc)).append(" ");
+
   for ( ; RC::SUCCESS == rc && record_count < limit; rc = scanner.get_next_record(&record)) {
     if (trx == nullptr || trx->is_visible(this, &record)) {
       rc = record_reader(&record, context);
@@ -490,7 +490,7 @@ RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *contex
       record_count++;
     }
   }
-  middle_res.append("record_count").append(std::to_string(record_count)).append(" ");
+
   if (RC::RECORD_EOF == rc) {
     rc = RC::SUCCESS;
   } else {
@@ -751,9 +751,7 @@ static RC record_reader_delete_adapter(Record *record, void *context) {
 
 RC Table::delete_record(Trx *trx, ConditionFilter *filter, int *deleted_count) {
   RecordDeleter deleter(*this, trx);
-  middle_res.append(trx == nullptr ? "trx null" : " trx").append(filter == nullptr ? "filter null" : " filter").append(deleted_count == nullptr ? "deleted_count null" : " deleted_count");
   RC rc = scan_record(trx, filter, -1, &deleter, record_reader_delete_adapter);
-  middle_res.append("deleter_count").append(std::to_string(deleter.deleted_count())).append("").append(std::to_string(rc));
   if (deleted_count != nullptr) {
     *deleted_count = deleter.deleted_count();
   }

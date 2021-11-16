@@ -24,7 +24,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/bplus_tree.h"
 #include "storage/common/table.h"
 #include "storage/common/condition_filter.h"
-extern std::string middle_res;
+
 DefaultHandler &DefaultHandler::get_default() {
   static DefaultHandler handler;
   return handler;
@@ -174,7 +174,6 @@ RC DefaultHandler::delete_record(Trx *trx, const char *dbname, const char *relat
   if (nullptr == table) {
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
-  middle_res.append("init_con ").append(std::to_string(condition_num)).append(" num");
   CompositeConditionFilter condition_filter;
   RC rc = condition_filter.init(*table, conditions, condition_num);
   if (rc != RC::SUCCESS) {

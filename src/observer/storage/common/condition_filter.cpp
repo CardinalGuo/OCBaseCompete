@@ -23,7 +23,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/check_trans.h"
 
 using namespace common;
-extern std::string middle_res;
+
 ConditionFilter::~ConditionFilter()
 {}
 
@@ -146,16 +146,13 @@ bool DefaultConditionFilter::filter(const Record &rec) const
   }
   //LOG_INFO("cmp_result %d",attr_type_);
   int cmp_result = 0;
-  middle_res.append("attr type").append(std::to_string(attr_type_));
+
   switch (attr_type_) {
     case DATES: {
       int left = left_.is_attr ? *(int *)left_value : check_trans::date_to_num(left_value);
       int right = right_.is_attr ? *(int *)right_value : check_trans::date_to_num(right_value);
 
       cmp_result = (int)((left - right == 0) ? 0 : (left - right > 0 ? 1 : -1));
-
-      middle_res.append(std::to_string(*(int *)left_value)).append(" ").append(right_value).append(" ").append(std::to_string(left));
-      middle_res.append(" ").append(std::to_string(right)).append(" ").append(std::to_string(cmp_result)).append("\n");
       
     }break;
     case CHARS: {  // 字符串都是定长的，直接比较

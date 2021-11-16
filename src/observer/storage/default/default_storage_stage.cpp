@@ -40,7 +40,6 @@ using namespace common;
 const std::string DefaultStorageStage::QUERY_METRIC_TAG = "DefaultStorageStage.query";
 const char * CONF_BASE_DIR = "BaseDir";
 const char * CONF_SYSTEM_DB = "SystemDb";
-extern std::string middle_res = "middle:";
 const char * DEFAULT_SYSTEM_DB = "sys";
 
 //! Constructor
@@ -184,9 +183,8 @@ void DefaultStorageStage::handle_event(StageEvent *event) {
       const Deletes &deletes = sql->sstr.deletion;
       const char *table_name = deletes.relation_name;
       int deleted_count = 0;
-      middle_res = "";
       rc = handler_->delete_record(current_trx, current_db, table_name, deletes.condition_num, deletes.conditions, &deleted_count);
-      snprintf(response, sizeof(response), "%s\n", rc == RC::SUCCESS ? middle_res.c_str() : "FAILURE");
+      snprintf(response, sizeof(response), "%s\n", rc == RC::SUCCESS ?"SUCCESS" : "FAILURE");
     }
     break;
   case SCF_CREATE_TABLE: { // create table
@@ -257,7 +255,6 @@ void DefaultStorageStage::handle_event(StageEvent *event) {
       snprintf(response, sizeof(response), "Unsupported sql: %d\n", sql->flag);
       break;
   }
-  middle_res.append("final commit ?? ").append(std::to_string(rc));
   if (rc == RC::SUCCESS && !session->is_trx_multi_operation_mode()) {
     rc = current_trx->commit();
     if (rc != RC::SUCCESS) {
