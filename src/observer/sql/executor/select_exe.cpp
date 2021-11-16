@@ -1451,7 +1451,10 @@ void SelectExe::get_expression_name(std::string &str_name, Expression *expressio
             }
             else
             {
-                str_name.append(name);
+                if (select->relation_num == 1 && select->join_num_max == 0)
+                    str_name.append(expression->atte.attribute);
+                else
+                    str_name.append(name);
             }
         }
         else
