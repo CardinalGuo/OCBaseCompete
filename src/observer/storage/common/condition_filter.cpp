@@ -151,11 +151,9 @@ bool DefaultConditionFilter::filter(const Record &rec) const
       int left = left_.is_attr ? *(int *)left_value : check_trans::date_to_num(left_value);
       int right = right_.is_attr ? *(int *)right_value : check_trans::date_to_num(right_value);
 
-      const char *date_str = (char *)left_value;
-      LOG_INFO("delete cmp date %d %d",left,right);
       cmp_result = (int)((left - right == 0) ? 0 : (left - right > 0 ? 1 : -1));
 
-      middle_res.append(date_str).append(" ").append(right_value).append(" ").append(std::to_string(left));
+      middle_res.append(std::to_string(*(int *)left_value)).append(" ").append(right_value).append(" ").append(std::to_string(left));
       middle_res.append(" ").append(std::to_string(right)).append(" ").append(std::to_string(cmp_result)).append("\n");
       
     }break;
