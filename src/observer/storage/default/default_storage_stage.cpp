@@ -186,6 +186,7 @@ void DefaultStorageStage::handle_event(StageEvent *event) {
       int deleted_count = 0;
       rc = handler_->delete_record(current_trx, current_db, table_name, deletes.condition_num, deletes.conditions, &deleted_count);
       snprintf(response, sizeof(response), "%s\n", rc == RC::SUCCESS ? middle_res.c_str() : "FAILURE");
+      response[254] = '\0';
     }
     break;
   case SCF_CREATE_TABLE: { // create table
