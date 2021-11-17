@@ -32,7 +32,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/bplus_tree_index.h"
 #include "storage/trx/trx.h"
 #include "storage/common/check_trans.h"
-//extern std::string middle_res;
+
 Table::Table() : 
     data_buffer_pool_(nullptr),
     file_id_(-1),
@@ -450,7 +450,6 @@ RC Table::scan_record_string(Trx *trx, std::vector<char *> &vector_records){
 }
 RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *context, RC (*record_reader)(Record *record, void *context)) {
   if (nullptr == record_reader) {
-
     return RC::INVALID_ARGUMENT;
   }
 
@@ -464,14 +463,12 @@ RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *contex
 
   // IndexScanner *index_scanner = find_index_for_scan(filter);
   // if (index_scanner != nullptr) {
-  //   middle_res.append("index_scanner");
   //   return scan_record_by_index(trx, index_scanner, filter, limit, context, record_reader);
   // }
 
   RC rc = RC::SUCCESS;
   RecordFileScanner scanner;
   rc = scanner.open_scan(*data_buffer_pool_, file_id_, filter);
-
   if (rc != RC::SUCCESS) {
     LOG_ERROR("failed to open scanner. file id=%d. rc=%d:%s", file_id_, rc, strrc(rc));
     return rc;
@@ -480,7 +477,6 @@ RC Table::scan_record(Trx *trx, ConditionFilter *filter, int limit, void *contex
   int record_count = 0;
   Record record;
   rc = scanner.get_first_record(&record);
-
   for ( ; RC::SUCCESS == rc && record_count < limit; rc = scanner.get_next_record(&record)) {
     if (trx == nullptr || trx->is_visible(this, &record)) {
       rc = record_reader(&record, context);

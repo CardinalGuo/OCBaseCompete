@@ -105,7 +105,7 @@ typedef struct ParserContext {
     //size_t condition_composite_num[MAX_NUM];
   Condition_Composite condition_composites[MAX_NUM];
   
-  Expression exp_array[MAX_NUM * 4];
+  Expression exp_array[MAX_NUM * 5];
   size_t exp_num;
   
 } ParserContext;
