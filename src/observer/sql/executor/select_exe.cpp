@@ -1145,7 +1145,7 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
                     int r_v = *(int *)right[0];
                     if (r_v == 0)
                     {
-                        res_attr = NULL_TYPE
+                        res_attr = NULL_TYPE;
                         break;
                     }
                     else
