@@ -37,7 +37,7 @@ typedef struct ParserContext {
     //size_t condition_composite_num[MAX_NUM];
   Condition_Composite condition_composites[MAX_NUM];
   
-  Expression exp_array[MAX_NUM * 2];
+  Expression exp_array[MAX_NUM * 5];
   size_t exp_num;
   
 } ParserContext;
@@ -88,6 +88,8 @@ ParserContext *get_context(yyscan_t scanner)
 %left SUB
 %left STAR
 %left DIV
+%nonassoc UMINUS
+
 
 %define api.pure full
 %lex-param { yyscan_t scanner }
@@ -380,6 +382,12 @@ value:
     |FLOAT{
   		value_init_float(&CONTEXT->values[CONTEXT->value_length++], $1);
 		}
+    |SUB NUMBER %prec UMINUS{	
+  		value_init_integer(&CONTEXT->values[CONTEXT->value_length++], -$2);
+		}
+    |SUB FLOAT %prec UMINUS{
+  		value_init_float(&CONTEXT->values[CONTEXT->value_length++], -$2);
+		}
     |SSS {
 			$1 = substr($1,1,strlen($1)-2);
   		value_init_string(&CONTEXT->values[CONTEXT->value_length++], $1);
@@ -628,6 +636,22 @@ expression:
         CONTEXT->exp_array[CONTEXT->exp_num++] = exp_leaf;
         $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
     }
+    |SUB NUMBER %prec UMINUS{
+        value_init_integer(&CONTEXT->values[CONTEXT->value_length++], -$2);
+        Value *value = &CONTEXT->values[CONTEXT->value_length - 1];
+        Expression exp_leaf;
+        expression_init_leaf(&exp_leaf, value);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_leaf;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+    }
+    |SUB FLOAT %prec UMINUS{
+        value_init_float(&CONTEXT->values[CONTEXT->value_length++], -$2);
+        Value *value = &CONTEXT->values[CONTEXT->value_length - 1];
+        Expression exp_leaf;
+        expression_init_leaf(&exp_leaf, value);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_leaf;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+    }
     | SSS {
         $1 = substr($1,1,strlen($1)-2);
         value_init_string(&CONTEXT->values[CONTEXT->value_length++], $1);
@@ -638,8 +662,18 @@ expression:
         $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
     }
     | LBRACE expression RBRACE {
+        Expression exp_node;
+        expression_init_node(&exp_node, $2,NULL,CAL_SELF);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_node;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+        //show_expression(&CONTEXT->exp_array[(CONTEXT->exp_num) - 1]);
+    }
+    |SUB LBRACE expression RBRACE %prec UMINUS{
     
-        $$ = $2;
+        Expression exp_node;
+        expression_init_node(&exp_node, $3,NULL,CAL_MINUS);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_node;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
         //show_expression(&CONTEXT->exp_array[(CONTEXT->exp_num) - 1]);
     }
     | expression ADD expression{
@@ -878,6 +912,23 @@ condition:
         show_select_num(CONTEXT->select_num);
         Condition_Composite condition_composite;
         condition_select_exe_init(&condition_composite, $2, $5, $4);
+        CONTEXT->condition_composites[CONTEXT->condition_total_num++] = condition_composite;
+        
+        //CONTEXT->condition_composite_num[CONTEXT->select_num]++;
+        
+        $$ = &CONTEXT->condition_composites[CONTEXT->condition_total_num - 1];
+    }
+    |condition_select_know select_main RBRACE comOp condition_select_know select_main RBRACE
+    {
+        CONTEXT->select_stack_index--;
+        CONTEXT->select_num = CONTEXT->select_stack[CONTEXT->select_stack_index];
+        show_select_num(CONTEXT->select_num);
+        CONTEXT->select_stack_index--;
+        CONTEXT->select_num = CONTEXT->select_stack[CONTEXT->select_stack_index];
+        show_select_num(CONTEXT->select_num);
+        
+        Condition_Composite condition_composite;
+        condition_select_select_init(&condition_composite, $2, $6, $4);
         CONTEXT->condition_composites[CONTEXT->condition_total_num++] = condition_composite;
         
         //CONTEXT->condition_composite_num[CONTEXT->select_num]++;

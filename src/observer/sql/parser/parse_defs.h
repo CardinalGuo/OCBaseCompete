@@ -94,7 +94,7 @@ typedef struct {
 
 //SELECTEXP   ID, COUNT(ID), ID DOT ID, COUNT(ID DOT ID), (RES) +-*/ (RES)
 
-typedef enum {NONEOPERATOR, CAL_ADD, CAL_SUB, CAL_MUL, CAL_DIV, CAL_COUNT, CAL_MAX, CAL_MIN, CAL_AVG, CAL_IDEO} Calculate;
+typedef enum {NONEOPERATOR, CAL_ADD, CAL_SUB, CAL_MUL, CAL_DIV, CAL_COUNT, CAL_MAX, CAL_MIN, CAL_AVG, CAL_MINUS, CAL_SELF, CAL_IDEO} Calculate;
 
 typedef struct _Expression{
   Calculate calculate;
@@ -128,7 +128,7 @@ typedef struct _Selects{
   char *    relations[10];     // relations in From clause
   
   size_t    expression_select_num;
-  Expression *expression_select[10];
+  Expression *expression_select[30];
   
   size_t    condition_num;
   Condition_Composite *conditions[10];
