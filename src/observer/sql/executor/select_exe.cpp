@@ -1660,7 +1660,7 @@ RC SelectExe::terminal_select(std::vector<std::vector<void *>> &select_ress, std
     {
         return rc;
     }
-    //show_schame_map();
+    show_schame_map();
 
     if (select->join_num_max == 0)
     {
@@ -1678,7 +1678,7 @@ RC SelectExe::terminal_select(std::vector<std::vector<void *>> &select_ress, std
             {
                 return rc;
             }
-            //show_schame_map();
+            show_schame_map();
             tables_records.push_back(table_records);
             rc = combain_table(0, i);
             if (rc != SUCCESS)
@@ -2173,7 +2173,7 @@ RC SelectExe::combain_table(int is_select, int join_num)
     tables_records.push_back(middle_records);
     middle_records.clear();
     ////LOG_INOF("record %d", (int)tables_records[0].size());
-    //show_records();
+    show_records();
     return rc;
 }
 void SelectExe::show_schame_map()

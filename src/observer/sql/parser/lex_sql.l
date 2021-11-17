@@ -81,6 +81,7 @@ QUOTE            [\'\"]
 [Ii][Nn][Nn][Ee][Rr]                                RETURN_TOKEN(INNER);
 [Gg][Rr][Oo][Uu][Pp]                                RETURN_TOKEN(GROUP);
 [Oo][Rr][Dd][Ee][Rr]                                RETURN_TOKEN(ORDER);
+[Uu][Nn][Ii][Qq][Uu][Ee]                RETURN_TOKEN(UNIQUE);
 [Bb][Yy]                                RETURN_TOKEN(BY);
 [Jj][Oo][Ii][Nn]                                RETURN_TOKEN(JOIN);
 [Aa][Ss][Cc]                                RETURN_TOKEN(ASC);
