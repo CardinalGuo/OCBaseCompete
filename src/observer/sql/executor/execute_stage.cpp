@@ -691,7 +691,7 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
   DefaultHandler *dh = h->handler();
   Db *datebase = dh->find_db(db);
 
-  SelectExe select_exe = SelectExe(nullptr);
+  SelectExe select_exe = SelectExe();
   select_exe.SelectExe_init(datebase, selects, trx);
 
   std::vector<std::vector<void *>> select_ress;

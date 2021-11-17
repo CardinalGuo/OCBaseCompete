@@ -13,9 +13,8 @@
 #include "storage/common/check_trans.h"
 //using namespace common;
 
-SelectExe::SelectExe(SelectExe *father_selectexe)
+SelectExe::SelectExe()
 {
-    this->father_selectexe = father_selectexe;
     // table_record = {};
     // single_table_schema_info = {};
     // muti_table_schema_info = {};
@@ -30,45 +29,25 @@ RC SelectExe::check_expression(Expression *expression)
 {
     if (expression->is_leaf == 1)
     {
-        //LOG_INFO("check exp_info");
+        ////LOG_INOF("check exp_info");
         if (expression->is_attr)
         {
-            bool get_attr = true;
             std::string str_name = "";
             const RelAttr *relattr = &expression->attr;
             if (relattr->relation_name != nullptr)
                 str_name.append(relattr->relation_name).append(".");
             str_name.append(relattr->attribute_name);
-            ////LOG_INOF("%s", str_name.c_str());
+            //LOG_INOF("%s", str_name.c_str());
             if (field_set.find(str_name) == field_set.end())
-            {
-                get_attr = false;
-                SelectExe *pointer = father_selectexe;
-                while (pointer != nullptr)
-                {
-                    if (pointer->field_set.find(str_name) != pointer->field_set.end())
-                    {
-                        get_attr = true;
-                        break;
-                    }
-                    else
-                    {
-                        pointer = pointer->father_selectexe;
-                    }
-                }
-            }
-            
-            if (!get_attr)
                 return RC::INVALID_ARGUMENT;
-            //LOG_INFO("check exp_info ok");
         }
-        
+        ////LOG_INOF("check exp_info ok");
     }
     else
     {
-        //////LOG_INOF("check count");
+        ////LOG_INOF("check count");
         RC rc_left = expression->left == nullptr ? RC::SUCCESS : check_expression(expression->left);
-        //////LOG_INOF("check count ok");
+        ////LOG_INOF("check count ok");
         if (rc_left != RC::SUCCESS)
             return RC::INVALID_ARGUMENT;
 
@@ -117,7 +96,7 @@ RC SelectExe::check_join(const JoinOn *joinon)
 void SelectExe::insert_field_from_table(Table *table, int flag)
 {
     const char *table_name = table->name();
-    //////LOG_INOF("%s",table_name);
+    ////LOG_INOF("%s",table_name);
     const TableMeta &table_meta = table->table_meta();
     const int field_num = table_meta.field_num();
     std::string str_name = "";
@@ -129,7 +108,7 @@ void SelectExe::insert_field_from_table(Table *table, int flag)
             str_name = "";
             str_name.append(table_name).append(".").append(field_meta->name());
             field_set[str_name] = field_meta->type();
-            //////LOG_INOF("%s",str_name.c_str());
+            ////LOG_INOF("%s",str_name.c_str());
             if (flag)
             {
                 str_name = "";
@@ -150,16 +129,16 @@ RC SelectExe::check_select(const Selects &selects)
     RC rc = RC::SUCCESS;
     Db *datebase = this->datebase;
 
-    ////LOG_INOF("check table");
+    //LOG_INOF("check table");
     for (size_t i = 0; i < selects.relation_num; i++)
     {
-        ////LOG_INOF("%d", selects.relation_num);
+        //LOG_INOF("%d", selects.relation_num);
         if (nullptr == datebase->find_table(selects.relations[i]))
             return RC::INVALID_ARGUMENT;
     }
     // add field name into set
 
-    ////LOG_INOF("add field name into set");
+    //LOG_INOF("add field name into set");
     if (selects.join_num_max > 0)
     {
         if (selects.relation_num != 1)
@@ -183,26 +162,15 @@ RC SelectExe::check_select(const Selects &selects)
                 insert_field_from_table(table, 0);
             }
         }
-
-        // SelectExe *pointer = this->father_selectexe;
-        // while (pointer != nullptr)
-        // {
-        //     for (size_t i = 0; i < pointer->select->relation_num; i++)
-        //     {
-        //         Table *table = datebase->find_table(pointer->select->relations[i]);
-        //         insert_field_from_table(table, 0);
-        //     }
-        //     pointer = pointer->father_selectexe;
-        // }
     }
 
-    ////LOG_INOF("check_join %d", selects.join_num_max - 1);
+    //LOG_INOF("check_join %d", selects.join_num_max - 1);
     for (int i = 0; i < selects.join_num_max; i++)
     {
         Table *table = datebase->find_table(selects.join_on[i].relation_name);
         std::string str_name = "";
         str_name.append(selects.join_on[i].relation_name).append(".").append("*");
-        ////LOG_INOF("%s", str_name.c_str());
+        //LOG_INOF("%s", str_name.c_str());
         if (field_set.find(str_name) != field_set.end())
             return RC::INVALID_ARGUMENT;
         insert_field_from_table(table, 0);
@@ -211,17 +179,17 @@ RC SelectExe::check_select(const Selects &selects)
             return RC::INVALID_ARGUMENT;
     }
 
-    ////LOG_INOF("check show_select");
+    //LOG_INOF("check show_select");
     for (size_t i = 0; i < selects.expression_select_num; i++)
     {
-        ////LOG_INOF("%d total num", (int)selects.expression_select_num);
+        //LOG_INOF("%d total num", (int)selects.expression_select_num);
         Expression *expre_tmp = selects.expression_select[i];
         rc = check_expression(expre_tmp);
         if (rc != SUCCESS)
             return RC::INVALID_ARGUMENT;
     }
-    ////LOG_INOF("check condition");
-    ////LOG_INOF("check condition %d", selects.condition_num);
+    //LOG_INOF("check condition");
+    //LOG_INOF("check condition %d", selects.condition_num);
     for (size_t i = 0; i < selects.condition_num; i++)
     {
         Condition_Composite *condition = selects.conditions[i];
@@ -230,7 +198,7 @@ RC SelectExe::check_select(const Selects &selects)
             return RC::INVALID_ARGUMENT;
     }
 
-    ////LOG_INOF("check group");
+    //LOG_INOF("check group");
     const GroupBy *groupby = &selects.group_by;
     for (size_t i = 0; i < groupby->attr_num; i++)
     {
@@ -243,7 +211,7 @@ RC SelectExe::check_select(const Selects &selects)
             return RC::INVALID_ARGUMENT;
     }
 
-    ////LOG_INOF("check order");
+    //LOG_INOF("check order");
     const OrderBy *orderby = &selects.order_by;
     for (size_t i = 0; i < orderby->attr_num; i++)
     {
@@ -286,7 +254,7 @@ void SelectExe::do_order_by(std::vector<char *> &records)
             int attr_offset = schema_tmp.offset;
             AttrType type_tmp = schema_tmp.type;
 
-            //////LOG_INOF("%d %d",attr_offset, type_tmp);
+            ////LOG_INOF("%d %d",attr_offset, type_tmp);
             char *left_value = left + attr_offset;
             char *right_value = right + attr_offset;
 
@@ -524,7 +492,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                                 std::string tmp_field_name = "";
                                 tmp_field_name.append(table_meta.name()).append(".").append(field_meta->name());
 
-                                ////LOG_INOF("view field %s", tmp_field_name.c_str());
+                                //LOG_INOF("view field %s", tmp_field_name.c_str());
 
                                 Schema_Info *schema_info = &table_map[tmp_field_name];
 
@@ -532,7 +500,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                                 {
                                     std::vector<void *> tmp_vec;
                                     select_ress->push_back(tmp_vec);
-                                    ////LOG_INOF("add new type into res %d", schema_info->type);
+                                    //LOG_INOF("add new type into res %d", schema_info->type);
                                     added_fields[tmp_field_name] = field_id;
                                     terminal_type->push_back(schema_info->type);
                                     field_id_tmp = field_id;
@@ -580,7 +548,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                             {
                                 std::vector<void *> tmp_vec;
                                 select_ress->push_back(tmp_vec);
-                                ////LOG_INOF("add new type into res %d", schema_info->type);
+                                //LOG_INOF("add new type into res %d", schema_info->type);
                                 terminal_type->push_back(schema_info->type);
                                 field_id_tmp = field_id;
                                 field_id++;
@@ -597,7 +565,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                                 int index = group_index_result[group_index][j];
                                 value = memcpy(value, (vec_records[index]) + schema_info->offset, schema_info->len * sizeof(char));
                                 (*select_ress)[field_id_tmp].push_back(value);
-                                ////LOG_INOF("has group ?%d", has_group);
+                                //LOG_INOF("has group ?%d", has_group);
                                 if (has_group)
                                 {
                                     break;
@@ -629,7 +597,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                     value = malloc(schema_info->len * sizeof(char));
                     int index = group_index_result[group_index][i];
                     value = memcpy(value, (vec_records[index]) + schema_info->offset, schema_info->len * sizeof(char));
-                    ////LOG_INOF("add  %d %d", *(int *)value, group_index);
+                    //LOG_INOF("add  %d %d", *(int *)value, group_index);
                     values_vec.push_back(value);
                 }
             }
@@ -698,7 +666,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
             void *value;
             value = malloc(sizeof(int));
             int sum = (int)left.size();
-            ////LOG_INOF("%d", sum);
+            //LOG_INOF("%d", sum);
             memcpy(value, &sum, sizeof(sum));
             res_type = INTS;
             values_vec.push_back(value);
@@ -709,7 +677,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
         case CAL_MUL:
         case CAL_DIV:
         {
-            //////LOG_INOF("%d %d", attr_left, attr_right);
+            ////LOG_INOF("%d %d", attr_left, attr_right);
             if (attr_left == UNDEFINED || attr_right == UNDEFINED)
             {
                 finish = false;
@@ -728,7 +696,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
             for (size_t i = 0; i < left.size() && i < right.size(); i++)
             {
                 void *value;
-                //////LOG_INOF("%d %d %d %d", (int)left.size(), (int)right.size(), finish, res_type);
+                ////LOG_INOF("%d %d %d %d", (int)left.size(), (int)right.size(), finish, res_type);
                 if (res_type == FLOATS)
                 {
                     float sum = 0;
@@ -789,7 +757,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                     case CAL_ADD:
                     {
                         sum = *(int *)left[i] + *(int *)right[i];
-                        //////LOG_INOF("%d %d %d  ", sum, *(int *)left[i], *(int *)right[i]);
+                        ////LOG_INOF("%d %d %d  ", sum, *(int *)left[i], *(int *)right[i]);
                         break;
                     }
                     case CAL_SUB:
@@ -872,7 +840,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                         avg_int += *(int *)left[index];
                     }
 
-                    //////LOG_INOF("%f",avg);
+                    ////LOG_INOF("%f",avg);
                     memcpy(value, &avg_int, sizeof(avg_int));
                     values_vec.push_back(value);
                 }
@@ -896,7 +864,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                     }
                     float avg = attr_left == INTS ? (float)(avg_int) / (float)(sz) : avg_float / (float)sz;
                     res_type = FLOATS;
-                    //////LOG_INOF("%f",avg);
+                    ////LOG_INOF("%f",avg);
                     memcpy(value, &avg, sizeof(avg));
                     values_vec.push_back(value);
                 }
@@ -992,7 +960,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
         if (!finish)
             rc = RC::INVALID_ARGUMENT;
 
-        ////LOG_INOF("free left_right expression_value");
+        //LOG_INOF("free left_right expression_value");
         free_vector(left);
         free_vector(right);
     }
@@ -1011,13 +979,13 @@ RC SelectExe::calculate_result()
         {
             AttrType type;
             std::vector<void *> value_res;
-            ////LOG_INOF("doing exp");
+            //LOG_INOF("doing exp");
             RC rc = calculate_expression(value_res, select->expression_select[j], i, type, 1);
             if (type != UNDEFINED)
             {
                 if (added_fields.find(std::to_string(j)) == added_fields.end())
                 {
-                    ////LOG_INOF("add new type into res type = %d, field_=%s id = %d", type, std::to_string(j).c_str(), field_id);
+                    //LOG_INOF("add new type into res type = %d, field_=%s id = %d", type, std::to_string(j).c_str(), field_id);
                     added_fields[std::to_string(j)] = field_id;
                     std::vector<void *> empty_vec;
                     select_ress->push_back(empty_vec);
@@ -1029,7 +997,7 @@ RC SelectExe::calculate_result()
                 {
 
                     (*select_ress)[field_id_tmp].push_back(it);
-                    ////LOG_INOF("%d", *(int *)((*select_ress)[field_id_tmp][0]));
+                    //LOG_INOF("%d", *(int *)((*select_ress)[field_id_tmp][0]));
                     if (has_group)
                     {
                         free_vector(value_res, 1);
@@ -1037,7 +1005,7 @@ RC SelectExe::calculate_result()
                     }
                 }
             }
-            ////LOG_INOF("finish exp");
+            //LOG_INOF("finish exp");
             if (rc != RC::SUCCESS)
                 return RC::INVALID_ARGUMENT;
             for (auto it : value_res)
@@ -1045,19 +1013,19 @@ RC SelectExe::calculate_result()
                 switch (type)
                 {
                 case INTS:
-                    ////LOG_INOF("%d", *(int *)it);
+                    //LOG_INOF("%d", *(int *)it);
                     break;
 
                 case FLOATS:
-                    ////LOG_INOF("%f", *(float *)it);
+                    //LOG_INOF("%f", *(float *)it);
                     break;
 
                 case CHARS:
-                    ////LOG_INOF("%s", (char *)it);
+                    //LOG_INOF("%s", (char *)it);
                     break;
 
                 case DATES:
-                    ////LOG_INOF("%d", *(int *)it);
+                    //LOG_INOF("%d", *(int *)it);
                     break;
 
                 default:
@@ -1088,27 +1056,13 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
             }
             else
             {
+                Schema_Info *schema_info = &table_map[name];
+                res_attr = schema_info->type;
 
-                SelectExe *pointer = this;
-                while (pointer != nullptr)
-                {
-                    //LOG_INFO("pointer finding ");
-                    if (pointer->table_map.find(name) != pointer->table_map.end())
-                    {
-                        Schema_Info *schema_info = &(pointer->table_map[name]);
-                        res_attr = schema_info->type;
-                        //LOG_INFO("pointer find ");
-                        void *value;
-                        value = malloc(schema_info->len * sizeof(char));
-                        value = memcpy(value, pointer->tmp_char_date + schema_info->offset, schema_info->len * sizeof(char));
-                        res_vec.push_back(value);
-                        break;
-                    }
-                    else
-                    {
-                        pointer = pointer->father_selectexe;
-                    }
-                }
+                void *value;
+                value = malloc(schema_info->len * sizeof(char));
+                value = memcpy(value, data_res + schema_info->offset, schema_info->len * sizeof(char));
+                res_vec.push_back(value);
             }
         }
         else
@@ -1163,7 +1117,7 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
             free_vector(right);
             return RC::INVALID_ARGUMENT;
         }
-        ////LOG_INOF("type  %d %d", attr_left, attr_right);
+        //LOG_INOF("type  %d %d", attr_left, attr_right);
         switch (expression->calculate)
         {
 
@@ -1176,7 +1130,7 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
             {
                 res_attr = NULL_TYPE;
             }
-            //////LOG_INOF("%d %d", attr_left, attr_right);
+            ////LOG_INOF("%d %d", attr_left, attr_right);
             if (attr_left == UNDEFINED || attr_right == UNDEFINED)
             {
                 finish = false;
@@ -1253,7 +1207,7 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
                 case CAL_ADD:
                 {
                     sum = *(int *)left[0] + *(int *)right[0];
-                    //////LOG_INOF("%d %d %d  ", sum, *(int *)left[i], *(int *)right[i]);
+                    ////LOG_INOF("%d %d %d  ", sum, *(int *)left[i], *(int *)right[i]);
                     break;
                 }
                 case CAL_SUB:
@@ -1378,7 +1332,7 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
         if (!finish)
             rc = RC::INVALID_ARGUMENT;
 
-        ////LOG_INOF("free left_right_con_expression");
+        //LOG_INOF("free left_right_con_expression");
         free_vector(left);
         free_vector(right);
     }
@@ -1409,9 +1363,9 @@ RC SelectExe::add_schameInfo_into_map(const char *relation_name)
         schema_tmp.offset = total_offset;
         total_offset += field_meta->len();
         schema_tmp.type = field_meta->type();
-        //////LOG_INOF("%d %d %s" ,schema_tmp.len, schema_tmp.offset, field_meta->name());
+        ////LOG_INOF("%d %d %s" ,schema_tmp.len, schema_tmp.offset, field_meta->name());
         table_map[table_name + "." + field_meta->name()] = schema_tmp;
-        //////LOG_INOF("%d",select->join_num_max);
+        ////LOG_INOF("%d",select->join_num_max);
         if (select->relation_num == 1 && select->join_num_max == 0)
             table_map[field_meta->name()] = schema_tmp;
     }
@@ -1464,7 +1418,7 @@ void SelectExe::get_expression_name(std::string &str_name, Expression *expressio
                                 for (int i = 0; i < field_num; i++)
                                 {
                                     const FieldMeta *field_meta = table_meta.field(i);
-                                    //////LOG_INOF("view field %s %s", table_meta.name(),field_meta->name());
+                                    ////LOG_INOF("view field %s %s", table_meta.name(),field_meta->name());
                                     if (field_meta->visible())
                                         terminal_fields->push_back(it + "." + field_meta->name());
                                 }
@@ -1509,7 +1463,7 @@ void SelectExe::get_expression_name(std::string &str_name, Expression *expressio
             {
 
                 int int_num = *(int *)expression->value.data;
-                ////LOG_INOF("load value %d ", int_num);
+                //LOG_INOF("load value %d ", int_num);
                 str_name.append(std::to_string(int_num));
             }
             break;
@@ -1609,11 +1563,11 @@ void SelectExe::load_terminal_fields()
         if (str_name != "")
         {
             terminal_fields->push_back(str_name);
-            ////LOG_INOF("%s", str_name.c_str());
+            //LOG_INOF("%s", str_name.c_str());
         }
         else
         {
-            ////LOG_INOF("rela.* is added");
+            //LOG_INOF("rela.* is added");
         }
     }
 }
@@ -1693,7 +1647,7 @@ RC SelectExe::terminal_select(std::vector<std::vector<void *>> &select_ress, std
             bool is_ok = true;
             for (int c_i = 0; c_i < select->condition_num; c_i++)
             {
-                ////LOG_INOF("%d", *(int *)*itr);
+                //LOG_INOF("%d", *(int *)*itr);
                 rc = condition_filter(is_ok, select->conditions[c_i], *itr);
                 if (rc != RC::SUCCESS)
                 {
@@ -1718,7 +1672,7 @@ RC SelectExe::terminal_select(std::vector<std::vector<void *>> &select_ress, std
 
     do_group_by(vec_records);
 
-    ////LOG_INOF("prepare res");
+    //LOG_INOF("prepare res");
 
     rc = calculate_result();
     if (rc != SUCCESS)
@@ -1782,7 +1736,7 @@ RC select_value_compare(void *left_value, void *right_value, AttrType attr_left,
         {
             right = *(int *)right_value;
         }
-        ////LOG_INOF("%d %d doint date cmp", left, right);
+        //LOG_INOF("%d %d doint date cmp", left, right);
         compare_res = left - right;
     }
     break;
@@ -1795,7 +1749,7 @@ RC select_value_compare(void *left_value, void *right_value, AttrType attr_left,
     {
         int left = *(int *)left_value;
         int right = *(int *)right_value;
-        //////LOG_INOF("%d %d",left,right);
+        ////LOG_INOF("%d %d",left,right);
         compare_res = left - right;
     }
     break;
@@ -1820,7 +1774,6 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     AttrType left_attr, right_attr;
     std::vector<std::vector<void *>> select_res_left, select_res_right;
     bool type_ok = true;
-    tmp_char_date = data_res;
     if (condition->left != nullptr)
         calculate_con_expression(left, condition->left, left_attr, data_res);
     if (condition->right != nullptr)
@@ -1829,13 +1782,12 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     {
 
         const Selects *selects = (Selects *)condition->select_attr_left;
-        SelectExe sel_exe = SelectExe(this);
+        SelectExe sel_exe = SelectExe();
         sel_exe.SelectExe_init(this->datebase, *selects, this->trx);
         std::vector<AttrType> condition_select_attrs;
         std::vector<std::string> condition_select_fields;
 
         rc = sel_exe.terminal_select(select_res_left, condition_select_attrs, condition_select_fields);
-        
         if (rc != RC::SUCCESS)
         {
             type_ok = false;
@@ -1881,14 +1833,12 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     {
 
         const Selects *selects = (Selects *)condition->select_attr_right;
-        SelectExe sel_exe = SelectExe(this);
+        SelectExe sel_exe = SelectExe();
         sel_exe.SelectExe_init(this->datebase, *selects, this->trx);
         std::vector<AttrType> condition_select_attrs;
         std::vector<std::string> condition_select_fields;
 
         rc = sel_exe.terminal_select(select_res_right, condition_select_attrs, condition_select_fields);
-
-        //LOG_INFO("right select ok? %d",rc);
         if (rc != RC::SUCCESS)
         {
             type_ok = false;
@@ -1932,7 +1882,7 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
         free_vector(right);
         return RC::INVALID_ARGUMENT;
     }
-    ////LOG_INOF("Type %d %d %d", left_attr, right_attr, type_ok);
+    //LOG_INOF("Type %d %d %d", left_attr, right_attr, type_ok);
 
     //check left_res can do with right_res
     if (left_attr != right_attr && left_attr != NULL_TYPE && right_attr != NULL_TYPE)
@@ -2002,7 +1952,7 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
             if (rc != RC::SUCCESS)
                 return rc;
             rc = select_value_compare(left[0], right[0], left_attr, right_attr, cmp_result);
-            //////LOG_INOF("%d cmp_Res %d", condition->comp, cmp_result);
+            ////LOG_INOF("%d cmp_Res %d", condition->comp, cmp_result);
             switch (condition->comp)
             {
             case EQUAL_TO:
@@ -2083,10 +2033,10 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
         }
     }
 
-    ////LOG_INOF("free left_right_con_expression");
+    //LOG_INOF("free left_right_con_expression");
     free_vector(left);
     free_vector(right);
-    ////LOG_INOF("free left_right_con_expression okkk %d", rc);
+    //LOG_INOF("free left_right_con_expression okkk %d", rc);
     return rc;
 }
 
@@ -2115,7 +2065,7 @@ RC SelectExe::combain(char *data_res, int table_num, int is_select, int join_num
             }
             else
             {
-                //////LOG_INOF(" is sel %d con_num %d",is_select, (int)select->join_on[join_num].condition_num);
+                ////LOG_INOF(" is sel %d con_num %d",is_select, (int)select->join_on[join_num].condition_num);
                 for (int c_i = 0; c_i < select->join_on[join_num].condition_num; c_i++)
                 {
                     rc = condition_filter(is_ok, select->join_on[join_num].conditions[c_i], data_res);
@@ -2129,7 +2079,7 @@ RC SelectExe::combain(char *data_res, int table_num, int is_select, int join_num
             }
             if (is_ok)
             {
-                //////LOG_INOF(" isokkkkkkkkkkkkkkkkkk");
+                ////LOG_INOF(" isokkkkkkkkkkkkkkkkkk");
                 char *tmp_res = (char *)malloc(tmp_total_len * sizeof(char));
                 memcpy(tmp_res, data_res, tmp_total_len * sizeof(char));
                 middle_records.push_back(tmp_res);
@@ -2165,14 +2115,14 @@ RC SelectExe::combain_table(int is_select, int join_num)
 
     if (combain_deep > 0)
     {
-        ////LOG_INOF("free middle tables_records %d", (int)tables_records[0].size());
+        //LOG_INOF("free middle tables_records %d", (int)tables_records[0].size());
         free_vector(tables_records[0]);
     }
     combain_deep++;
     tables_records.clear();
     tables_records.push_back(middle_records);
     middle_records.clear();
-    ////LOG_INOF("record %d", (int)tables_records[0].size());
+    //LOG_INOF("record %d", (int)tables_records[0].size());
     show_records();
     return rc;
 }
@@ -2180,7 +2130,7 @@ void SelectExe::show_schame_map()
 {
     for (auto it : table_map)
     {
-        ////LOG_INOF("name=%s type=%d offset=%d len=%d", it.first.c_str(), it.second.type, it.second.offset, it.second.len);
+        //LOG_INOF("name=%s type=%d offset=%d len=%d", it.first.c_str(), it.second.type, it.second.offset, it.second.len);
     }
 }
 RC SelectExe::show_records()
@@ -2188,26 +2138,26 @@ RC SelectExe::show_records()
 
     for (auto record : tables_records[0])
     {
-        ////LOG_INOF("record :");
+        //LOG_INOF("record :");
         for (auto it : table_map)
         {
-            ////LOG_INOF("%s", it.first.c_str());
+            //LOG_INOF("%s", it.first.c_str());
             switch (it.second.type)
             {
             case INTS:
-                ////LOG_INOF("%d", *(int *)((char *)record + it.second.offset));
+                //LOG_INOF("%d", *(int *)((char *)record + it.second.offset));
                 break;
 
             case FLOATS:
-                ////LOG_INOF("%f", *(float *)((char *)record + it.second.offset));
+                //LOG_INOF("%f", *(float *)((char *)record + it.second.offset));
                 break;
 
             case CHARS:
-                ////LOG_INOF("%s", (char *)((char *)record + it.second.offset));
+                //LOG_INOF("%s", (char *)((char *)record + it.second.offset));
                 break;
 
             case DATES:
-                ////LOG_INOF("%d", *(int *)((char *)record + it.second.offset));
+                //LOG_INOF("%d", *(int *)((char *)record + it.second.offset));
                 break;
 
             default:

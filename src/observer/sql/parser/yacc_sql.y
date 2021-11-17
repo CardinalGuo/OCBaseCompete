@@ -103,7 +103,6 @@ ParserContext *get_context(yyscan_t scanner)
         TABLE
         TABLES
         INDEX
-        UNIQUE
         SELECT
         DESC
         ASC
@@ -269,31 +268,17 @@ desc_table:
       desc_table_init(&CONTEXT->ssql->sstr.desc_table, $2);
     }
     ;
-index_attr_list:
-    ID
-    {
-        create_index_append_attr(&CONTEXT->ssql->sstr.create_index, $1);
-    }
-    | ID COMMA index_attr_list
-    {
-        create_index_append_attr(&CONTEXT->ssql->sstr.create_index, $1);
-    }
-;
+
 create_index:		/*create index 语句的语法解析树*/
-    CREATE INDEX ID ON ID LBRACE index_attr_list RBRACE SEMICOLON 
+    CREATE INDEX ID ON ID LBRACE ID RBRACE SEMICOLON 
 		{
 			CONTEXT->ssql->flag = SCF_CREATE_INDEX;//"create_index";
-			create_index_init(&CONTEXT->ssql->sstr.create_index, $3, $5, 0);
-		}
-    |CREATE UNIQUE INDEX ID ON ID LBRACE index_attr_list RBRACE SEMICOLON 
-		{
-			CONTEXT->ssql->flag = SCF_CREATE_INDEX;//"create_index";
-			create_index_init(&CONTEXT->ssql->sstr.create_index, $4, $6, 1);
+			create_index_init(&CONTEXT->ssql->sstr.create_index, $3, $5, $7);
 		}
     ;
 
 drop_index:			/*drop index 语句的语法解析树*/
-    DROP INDEX ID SEMICOLON 
+    DROP INDEX ID  SEMICOLON 
 		{
 			CONTEXT->ssql->flag=SCF_DROP_INDEX;//"drop_index";
 			drop_index_init(&CONTEXT->ssql->sstr.drop_index, $3);
