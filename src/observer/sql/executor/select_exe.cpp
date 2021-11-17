@@ -1045,6 +1045,9 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
         case CAL_MUL:
         case CAL_DIV:
         {
+            if (attr_left == NULL_TYPE || attr_right == NULL_TYPE){
+                res_attr = NULL_TYPE;
+            }
             ////LOG_INOF("%d %d", attr_left, attr_right);
             if (attr_left == UNDEFINED || attr_right == UNDEFINED)
             {
@@ -1100,7 +1103,7 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
                 case CAL_DIV:
                     if (l_f == 0.0)
                     {
-                        finish = false;
+                        res_attr = NULL_TYPE;
                         break;
                     }
                     else
@@ -1142,7 +1145,7 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
                     int r_v = *(int *)right[0];
                     if (r_v == 0)
                     {
-                        finish = false;
+                        res_attr = NULL_TYPE
                         break;
                     }
                     else
@@ -1708,9 +1711,11 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
             }
             else
             {
+                if (select_res_right.size() > 0){
                 for (size_t i = 0; i < select_res_right[0].size(); i++)
                 {
                     right.push_back(select_res_right[0][i]);
+                }
                 }
             }
         }
@@ -1752,9 +1757,10 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
             }
             else
             {
+                is_ok = false;
                 for (auto it : right)
                 {
-                    is_ok = false;
+
                     rc = select_value_compare(left[0], it, left_attr, right_attr, cmp_result);
                     if (cmp_result == 0)
                     {
