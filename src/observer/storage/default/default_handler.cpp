@@ -174,6 +174,7 @@ RC DefaultHandler::delete_record(Trx *trx, const char *dbname, const char *relat
   if (nullptr == table) {
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
+
   CompositeConditionFilter condition_filter;
   RC rc = condition_filter.init(*table, conditions, condition_num);
   if (rc != RC::SUCCESS) {

@@ -17,7 +17,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <stddef.h>
 
-#define MAX_INSERT_RECORD 10
+#define MAX_INSERT_RECORD 8
 #define MAX_NUM 20
 #define MAX_REL_NAME 20
 #define MAX_ATTR_NAME 20
@@ -42,6 +42,10 @@ typedef enum {
   ATTR_NOT_IN,  //  not in      7   
   NO_OP
 } CompOp;
+
+struct DATES {
+  const char date[20];
+};
 
 //属性值类型
 typedef enum { UNDEFINED, CHARS, INTS, FLOATS ,DATES, NULL_TYPE} AttrType;
@@ -90,7 +94,7 @@ typedef struct {
 
 //SELECTEXP   ID, COUNT(ID), ID DOT ID, COUNT(ID DOT ID), (RES) +-*/ (RES)
 
-typedef enum {NONEOPERATOR, CAL_ADD, CAL_SUB, CAL_MUL, CAL_DIV, CAL_COUNT, CAL_MAX, CAL_MIN, CAL_AVG, CAL_MINUS, CAL_SELF, CAL_IDEO} Calculate;
+typedef enum {NONEOPERATOR, CAL_ADD, CAL_SUB, CAL_MUL, CAL_DIV, CAL_COUNT, CAL_MAX, CAL_MIN, CAL_AVG, CAL_IDEO} Calculate;
 
 typedef struct _Expression{
   Calculate calculate;
@@ -116,7 +120,7 @@ typedef struct _Condition_Composite {
 typedef struct {
   char *    relation_name;
   size_t    condition_num;          // Length of conditions in Where clause
-  Condition_Composite *conditions[8];    // conditions in Where clause
+  Condition_Composite *conditions[10];    // conditions in Where clause
 } JoinOn;
 
 typedef struct _Selects{
@@ -124,7 +128,7 @@ typedef struct _Selects{
   char *    relations[10];     // relations in From clause
   
   size_t    expression_select_num;
-  Expression *expression_select[40];
+  Expression *expression_select[10];
   
   size_t    condition_num;
   Condition_Composite *conditions[10];
