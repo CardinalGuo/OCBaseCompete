@@ -62,7 +62,7 @@ void IndexMeta::to_json(Json::Value &json_value) const
   json_value[FIELD_FIELD_NAME] = field_;
   json_value[FIELD_UNIQUE] = unique_;
   Json::Value field_values;
-  for (auto it : field_vec_)
+  for (auto &it : field_vec_)
   {
     Json::Value field_value;
     field_value[FIELD_FIELD_NAME] = it;
@@ -83,16 +83,18 @@ RC IndexMeta::from_json(const TableMeta &table, const Json::Value &json_value, I
     return RC::GENERIC_ERROR;
   }
 
-  if (!field_vec_value.empty() || !field_vec_value.isArray())
+  if (field_vec_value.empty() || !field_vec_value.isArray())
   {
     LOG_ERROR("Invalid field_vec_value, json value=%s", field_vec_value.toStyledString().c_str());
     return RC::SCHEMA_FIELD_MISSING;
   }
   const int field_num = field_vec_value.size();
+  LOG_INFO("field_vec_value.size() %d",(int)field_vec_value.size());
   std::vector<FieldMeta> field_vec(field_num);
   for (int i = 0; i < field_num; i++)
   {
-    const FieldMeta *field = table.field(field_vec_value[i].asCString());
+    
+    const FieldMeta *field = table.field(field_vec_value[i][FIELD_FIELD_NAME].asCString());
     if (nullptr == field)
     {
       LOG_ERROR("Deserialize index [%s]: no such field: %s", name_value.asCString(), field_vec_value[i].asCString());
@@ -114,9 +116,9 @@ const char *IndexMeta::field() const
   return field_.c_str();
 }
 
-const std::vector<std::string> *IndexMeta::field_vec() const
+const std::vector<std::string> IndexMeta::field_vec() const
 {
-  return &field_vec_;
+  return field_vec_;
 }
 
 void IndexMeta::desc(std::ostream &os) const

@@ -184,14 +184,19 @@ RC Table::open(const char *meta_file, const char *base_dir)
   for (int i = 0; i < index_num; i++)
   {
     const IndexMeta *index_meta = table_meta_.index(i);
-    const FieldMeta *field_meta = table_meta_.field(index_meta->field());
-    if (field_meta == nullptr)
-    {
-      LOG_PANIC("Found invalid index meta info which has a non-exists field. table=%s, index=%s, field=%s",
-                name(), index_meta->name(), index_meta->field());
-      return RC::GENERIC_ERROR;
-    }
+    const std::vector<std::string> field_vec = index_meta->field_vec();
 
+    for (auto it : field_vec)
+    {
+      const FieldMeta *field_meta = table_meta_.field(it.c_str());
+      if (field_meta == nullptr)
+      {
+        LOG_PANIC("Found invalid index meta info which has a non-exists field. table=%s, index=%s, field=%s",
+                  name(), index_meta->name(), it.c_str());
+        return RC::GENERIC_ERROR;
+      }
+    }
+    const FieldMeta *field_meta = table_meta_.field(field_vec[0].c_str());
     BplusTreeIndex *index = new BplusTreeIndex();
     std::string index_file = index_data_file(base_dir, name(), index_meta->name());
     rc = index->open(index_file.c_str(), *index_meta, *field_meta);

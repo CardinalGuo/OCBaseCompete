@@ -160,10 +160,10 @@ const IndexMeta * TableMeta::find_index_by_field(const char *field) const {
 const IndexMeta * TableMeta::find_index_by_fields(char *fields[10], int fields_num) const {
   for (const IndexMeta &index : indexes_) {
     bool the_same = true;
-    const std::vector<std::string> *fields_vec = index.field_vec();
-    if (fields_num != (int)(fields_vec->size())) continue;
+    const std::vector<std::string> fields_vec = index.field_vec();
+    if (fields_num != (int)(fields_vec.size())) continue;
     for (int i = 0;i < fields_num;i++){
-      std::string str = (*fields_vec)[i];
+      std::string str = fields_vec[i];
       if (0 != strcmp(fields[i], str.c_str())){
         the_same = false;
         break;
