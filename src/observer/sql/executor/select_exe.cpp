@@ -13,8 +13,9 @@
 #include "storage/common/check_trans.h"
 //using namespace common;
 
-SelectExe::SelectExe()
+SelectExe::SelectExe(SelectExe *father_selectexe)
 {
+    this->father_selectexe = father_selectexe;
     // table_record = {};
     // single_table_schema_info = {};
     // muti_table_schema_info = {};
@@ -161,6 +162,17 @@ RC SelectExe::check_select(const Selects &selects)
             {
                 insert_field_from_table(table, 0);
             }
+        }
+
+        SelectExe *pointer = this->father_selectexe;
+        while (pointer != nullptr)
+        {
+            for (size_t i = 0; i < pointer->select->relation_num; i++)
+            {
+                Table *table = datebase->find_table(pointer->select->relations[i]);
+                insert_field_from_table(table, 0);
+            }
+            pointer = pointer->father_selectexe;
         }
     }
 
@@ -1594,6 +1606,20 @@ RC SelectExe::load_records_and_schames(const Selects select)
         add_schameInfo_into_map(select.relations[i]);
         tables_records.push_back(table_records);
     }
+    SelectExe *pointer = this->father_selectexe;
+
+    while (pointer != nullptr)
+    {
+        for (int i = pointer->select->relation_num - 1; i >= 0; i--)
+        {
+            std::vector<char *> table_records;
+            Table *table = datebase->find_table(pointer->select->relations[i]);
+            table->scan_record_string(this->trx, table_records);
+            add_schameInfo_into_map(pointer->select->relations[i]);
+            tables_records.push_back(table_records);
+        }
+        pointer = pointer->father_selectexe;
+    }
     return RC::SUCCESS;
 }
 
@@ -1782,7 +1808,7 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     {
 
         const Selects *selects = (Selects *)condition->select_attr_left;
-        SelectExe sel_exe = SelectExe();
+        SelectExe sel_exe = SelectExe(this);
         sel_exe.SelectExe_init(this->datebase, *selects, this->trx);
         std::vector<AttrType> condition_select_attrs;
         std::vector<std::string> condition_select_fields;
@@ -1833,7 +1859,7 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     {
 
         const Selects *selects = (Selects *)condition->select_attr_right;
-        SelectExe sel_exe = SelectExe();
+        SelectExe sel_exe = SelectExe(this);
         sel_exe.SelectExe_init(this->datebase, *selects, this->trx);
         std::vector<AttrType> condition_select_attrs;
         std::vector<std::string> condition_select_fields;
