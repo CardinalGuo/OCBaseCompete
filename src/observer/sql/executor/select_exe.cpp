@@ -1754,7 +1754,7 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
             {
                 for (auto it : right)
                 {
-
+                    is_ok = false;
                     rc = select_value_compare(left[0], it, left_attr, right_attr, cmp_result);
                     if (cmp_result == 0)
                     {
