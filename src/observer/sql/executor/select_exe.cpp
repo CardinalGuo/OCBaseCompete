@@ -660,6 +660,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
 
         switch (expression->calculate)
         {
+
         case CAL_COUNT:
         {
             void *value;
@@ -873,6 +874,86 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
 
         case CAL_IDEO:
             break;
+        case CAL_SELF:
+        {
+            res_type = attr_left;
+            for (size_t i = 0; i < left.size(); i++)
+            {
+                void *value;
+                res_type = attr_left;
+                switch (res_type)
+                {
+                case INTS:
+                {
+                    value = malloc(sizeof(int));
+                    memcpy(value, left[i], sizeof(int));
+                }
+                break;
+                case FLOATS:
+                {
+                    value = malloc(sizeof(float));
+                    memcpy(value, left[i], sizeof(int));
+                }
+                break;
+                case CHARS:
+                {
+                    value = strdup((char *)left[i]);
+                }
+                break;
+                case DATES:
+                {
+                    value = malloc(sizeof(int));
+                    memcpy(value, left[i], sizeof(int));
+                }
+                break;
+                case NULL_TYPE:
+                {
+                }
+                break;
+                default:
+                    break;
+                }
+                values_vec.push_back(value);
+            }
+        }
+        break;
+        case CAL_MINUS:
+        {
+
+            res_type = attr_left;
+            for (size_t i = 0; i < left.size(); i++)
+            {
+                void *value;
+                if (attr_left == NULL_TYPE)
+                {
+                    break;
+                }
+
+                if (attr_left != FLOATS && attr_left != INTS)
+                {
+                    finish = false;
+                    break;
+                }
+                else
+                {
+
+                    if (attr_left == FLOATS)
+                    {
+                        value = malloc(sizeof(float));
+                        float tmp_float = -1.0 * (*(float *)left[i]);
+                        memcpy(value, &tmp_float, sizeof(tmp_float));
+                    }
+                    else
+                    {
+                        value = malloc(sizeof(int));
+                        int tmp_int = -1.0 * (*(int *)left[i]);
+                        memcpy(value, &tmp_int, sizeof(tmp_int));
+                    }
+                }
+                values_vec.push_back(value);
+            }
+        }
+        break;
         default:
             break;
         }
@@ -1045,7 +1126,8 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
         case CAL_MUL:
         case CAL_DIV:
         {
-            if (attr_left == NULL_TYPE || attr_right == NULL_TYPE){
+            if (attr_left == NULL_TYPE || attr_right == NULL_TYPE)
+            {
                 res_attr = NULL_TYPE;
             }
             ////LOG_INOF("%d %d", attr_left, attr_right);
@@ -1169,7 +1251,79 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
         case CAL_AVG:
             finish = false;
             break;
+        case CAL_SELF:
+        {
+            void *value;
+            res_attr = attr_left;
+            switch (res_attr)
+            {
+            case INTS:
+            {
+                value = malloc(sizeof(int));
+                memcpy(value, left[0], sizeof(int));
+            }
+            break;
+            case FLOATS:
+            {
+                value = malloc(sizeof(float));
+                memcpy(value, left[0], sizeof(int));
+            }
+            break;
+            case CHARS:
+            {
+                value = strdup((char *)left[0]);
+            }
+            break;
+            case DATES:
+            {
+                value = malloc(sizeof(int));
+                memcpy(value, left[0], sizeof(int));
+            }
+            break;
+            case NULL_TYPE:
+            {
+            }
+            break;
+            default:
+                break;
+            }
+            res_vec.push_back(value);
+        }
+        break;
+        case CAL_MINUS:
+        {
 
+            void *value;
+            res_attr = attr_left;
+            if (attr_left == NULL_TYPE)
+            {
+                break;
+            }
+
+            if (attr_left != FLOATS && attr_left != INTS)
+            {
+                finish = false;
+                break;
+            }
+            else
+            {
+
+                if (attr_left == FLOATS)
+                {
+                    value = malloc(sizeof(float));
+                    float tmp_float = -1.0 * (*(float *)left[0]);
+                    memcpy(value, &tmp_float, sizeof(tmp_float));
+                }
+                else
+                {
+                    value = malloc(sizeof(int));
+                    int tmp_int = -1.0 * (*(int *)left[0]);
+                    memcpy(value, &tmp_int, sizeof(tmp_int));
+                }
+            }
+            res_vec.push_back(value);
+        }
+        break;
         case CAL_IDEO:
             break;
         default:
@@ -1711,11 +1865,12 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
             }
             else
             {
-                if (select_res_right.size() > 0){
-                for (size_t i = 0; i < select_res_right[0].size(); i++)
+                if (select_res_right.size() > 0)
                 {
-                    right.push_back(select_res_right[0][i]);
-                }
+                    for (size_t i = 0; i < select_res_right[0].size(); i++)
+                    {
+                        right.push_back(select_res_right[0][i]);
+                    }
                 }
             }
         }
