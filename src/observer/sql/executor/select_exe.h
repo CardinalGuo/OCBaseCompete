@@ -26,7 +26,7 @@ typedef struct Schema_Info{
 class SelectExe{
 
     public:
-        SelectExe();
+        SelectExe(SelectExe *father_selectexe);
         ~SelectExe();
 
         
@@ -95,6 +95,9 @@ class SelectExe{
         std::vector<std::vector<void *>> *select_ress;
         int field_id = 0; //show field_id;
         std::map<std::string, int> added_fields;
+
+        SelectExe *father_selectexe;
+        char *tmp_char_date;
 };
 
 #endif //__OBSERVER_SQL_SELECT_EXE_H__

@@ -11,7 +11,7 @@ See the Mulan PSL v2 for more details. */
 //
 // Created by Wangyunlai on 2021/5/12.
 //
-
+#include <vector>
 #include <algorithm>
 
 #include "storage/common/table_meta.h"
@@ -152,6 +152,24 @@ const IndexMeta * TableMeta::index(const char *name) const {
 const IndexMeta * TableMeta::find_index_by_field(const char *field) const {
   for (const IndexMeta &index : indexes_) {
     if (0 == strcmp(index.field(), field)) {
+      return &index;
+    }
+  }
+  return nullptr;
+}
+const IndexMeta * TableMeta::find_index_by_fields(char *fields[10], int fields_num) const {
+  for (const IndexMeta &index : indexes_) {
+    bool the_same = true;
+    const std::vector<std::string> *fields_vec = index.field_vec();
+    if (fields_num != (int)(fields_vec->size())) continue;
+    for (int i = 0;i < fields_num;i++){
+      std::string str = (*fields_vec)[i];
+      if (0 != strcmp(fields[i], str.c_str())){
+        the_same = false;
+        break;
+      }
+    }
+    if (the_same == true){
       return &index;
     }
   }
