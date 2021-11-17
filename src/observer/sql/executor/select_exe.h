@@ -97,6 +97,7 @@ class SelectExe{
         std::map<std::string, int> added_fields;
 
         SelectExe *father_selectexe;
+        char *tmp_char_date;
 };
 
 #endif //__OBSERVER_SQL_SELECT_EXE_H__

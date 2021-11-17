@@ -30,9 +30,10 @@ RC SelectExe::check_expression(Expression *expression)
 {
     if (expression->is_leaf == 1)
     {
-        ////LOG_INOF("check exp_info");
+        LOG_INFO("check exp_info");
         if (expression->is_attr)
         {
+            bool get_attr = true;
             std::string str_name = "";
             const RelAttr *relattr = &expression->attr;
             if (relattr->relation_name != nullptr)
@@ -40,9 +41,28 @@ RC SelectExe::check_expression(Expression *expression)
             str_name.append(relattr->attribute_name);
             //LOG_INOF("%s", str_name.c_str());
             if (field_set.find(str_name) == field_set.end())
+            {
+                get_attr = false;
+                SelectExe *pointer = father_selectexe;
+                while (pointer != nullptr)
+                {
+                    if (pointer->field_set.find(str_name) != pointer->field_set.end())
+                    {
+                        get_attr = true;
+                        break;
+                    }
+                    else
+                    {
+                        pointer = pointer->father_selectexe;
+                    }
+                }
+            }
+            
+            if (!get_attr)
                 return RC::INVALID_ARGUMENT;
+            LOG_INFO("check exp_info ok");
         }
-        ////LOG_INOF("check exp_info ok");
+        
     }
     else
     {
@@ -164,16 +184,16 @@ RC SelectExe::check_select(const Selects &selects)
             }
         }
 
-        SelectExe *pointer = this->father_selectexe;
-        while (pointer != nullptr)
-        {
-            for (size_t i = 0; i < pointer->select->relation_num; i++)
-            {
-                Table *table = datebase->find_table(pointer->select->relations[i]);
-                insert_field_from_table(table, 0);
-            }
-            pointer = pointer->father_selectexe;
-        }
+        // SelectExe *pointer = this->father_selectexe;
+        // while (pointer != nullptr)
+        // {
+        //     for (size_t i = 0; i < pointer->select->relation_num; i++)
+        //     {
+        //         Table *table = datebase->find_table(pointer->select->relations[i]);
+        //         insert_field_from_table(table, 0);
+        //     }
+        //     pointer = pointer->father_selectexe;
+        // }
     }
 
     //LOG_INOF("check_join %d", selects.join_num_max - 1);
@@ -1068,13 +1088,27 @@ RC SelectExe::calculate_con_expression(std::vector<void *> &res_vec, Expression 
             }
             else
             {
-                Schema_Info *schema_info = &table_map[name];
-                res_attr = schema_info->type;
 
-                void *value;
-                value = malloc(schema_info->len * sizeof(char));
-                value = memcpy(value, data_res + schema_info->offset, schema_info->len * sizeof(char));
-                res_vec.push_back(value);
+                SelectExe *pointer = this;
+                while (pointer != nullptr)
+                {
+                    LOG_INFO("pointer finding ");
+                    if (pointer->table_map.find(name) != pointer->table_map.end())
+                    {
+                        Schema_Info *schema_info = &(pointer->table_map[name]);
+                        res_attr = schema_info->type;
+                        LOG_INFO("pointer find ");
+                        void *value;
+                        value = malloc(schema_info->len * sizeof(char));
+                        value = memcpy(value, pointer->tmp_char_date + schema_info->offset, schema_info->len * sizeof(char));
+                        res_vec.push_back(value);
+                        break;
+                    }
+                    else
+                    {
+                        pointer = pointer->father_selectexe;
+                    }
+                }
             }
         }
         else
@@ -1606,20 +1640,6 @@ RC SelectExe::load_records_and_schames(const Selects select)
         add_schameInfo_into_map(select.relations[i]);
         tables_records.push_back(table_records);
     }
-    SelectExe *pointer = this->father_selectexe;
-
-    while (pointer != nullptr)
-    {
-        for (int i = pointer->select->relation_num - 1; i >= 0; i--)
-        {
-            std::vector<char *> table_records;
-            Table *table = datebase->find_table(pointer->select->relations[i]);
-            table->scan_record_string(this->trx, table_records);
-            add_schameInfo_into_map(pointer->select->relations[i]);
-            tables_records.push_back(table_records);
-        }
-        pointer = pointer->father_selectexe;
-    }
     return RC::SUCCESS;
 }
 
@@ -1800,6 +1820,7 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
     AttrType left_attr, right_attr;
     std::vector<std::vector<void *>> select_res_left, select_res_right;
     bool type_ok = true;
+    tmp_char_date = data_res;
     if (condition->left != nullptr)
         calculate_con_expression(left, condition->left, left_attr, data_res);
     if (condition->right != nullptr)
@@ -1814,6 +1835,7 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
         std::vector<std::string> condition_select_fields;
 
         rc = sel_exe.terminal_select(select_res_left, condition_select_attrs, condition_select_fields);
+        
         if (rc != RC::SUCCESS)
         {
             type_ok = false;
@@ -1865,6 +1887,8 @@ RC SelectExe::condition_filter(bool &is_ok, Condition_Composite *condition, char
         std::vector<std::string> condition_select_fields;
 
         rc = sel_exe.terminal_select(select_res_right, condition_select_attrs, condition_select_fields);
+
+        LOG_INFO("right select ok? %d",rc);
         if (rc != RC::SUCCESS)
         {
             type_ok = false;
