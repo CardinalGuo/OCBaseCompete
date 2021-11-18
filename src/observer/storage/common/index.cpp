@@ -28,8 +28,4 @@ RC Index::init(const IndexMeta &index_meta, const std::vector<FieldMeta> &field_
 
 void Index::show(){
   
-  // for (auto it : field_meta_vec_){
-  //   LOG_INFO("%s %d %d %d",it.name(),it.len(),it.type(),it.offset());
-  // }
-  // LOG_INFO("%d",unique_);
 }

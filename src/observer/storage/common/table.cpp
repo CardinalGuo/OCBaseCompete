@@ -826,11 +826,24 @@ RC Table::update_check(int condition_num, const Condition *conditions)
 RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value, int condition_num, const Condition conditions[], int *updated_count)
 {
   int flag = 0;
+  Value val_tmp;
+  bool is_date = false;
   if (const auto &i = table_meta_.field(attribute_name))
   {
     if (i->type() == value->type)
     {
       flag = 1;
+    }else{
+      if (i->type() == DATES && value->type == CHARS){
+        val_tmp.type = INTS;
+        is_date = true;
+        if (check_trans::check_date((char *)value->data)){
+          flag = 1;
+          int date_tmp = check_trans::date_to_num(value->data);
+          val_tmp.data = malloc(sizeof(int));
+          memcpy(val_tmp.data,&date_tmp,sizeof(int));
+        }
+      }
     }
   }
   if (flag == 0)
@@ -847,7 +860,7 @@ RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value
   filter_val.init(*this, conditions, condition_num);
   CompositeConditionFilter *filter = &filter_val;
 
-  RecordUpdater updater(*this, trx, attribute_name, value);
+  RecordUpdater updater(*this, trx, attribute_name, is_date ? &val_tmp :value);
   RC rc = scan_record(trx, filter, -1, &updater, record_reader_update_adapter);
   if (updated_count != nullptr)
   {
