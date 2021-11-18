@@ -25,6 +25,9 @@ struct IndexFileHeader {
   PageNum root_page; // 初始时，root_page一定是1
   int node_num;
   int order;
+/////////////////////////////2021/11/18
+  int unique;
+/////////////////////////////2021/11/18
 };
 
 struct IndexNode {
@@ -33,6 +36,9 @@ struct IndexNode {
   PageNum parent;
   char *keys;
   RID *rids;
+/////////////////////////////2021/11/18
+  int unique;
+/////////////////////////////2021/11/18
 };
 
 struct TreeNode {
@@ -56,7 +62,8 @@ public:
    * 此函数创建一个名为fileName的索引。
    * attrType描述被索引属性的类型，attrLength描述被索引属性的长度
    */
-  RC create(const char *file_name, AttrType attr_type, int attr_length);
+  ////////////////////////////////////20211118
+  RC create(const char *file_name, AttrType attr_type, int attr_length, int is_unique);
 
   /**
    * 打开名为fileName的索引文件。
@@ -95,8 +102,9 @@ public:
   RC print_tree();
 protected:
   RC find_leaf(const char *pkey, PageNum *leaf_page);
-  RC insert_into_leaf(PageNum leaf_page, const char *pkey, const RID *rid);
-  RC insert_into_leaf_after_split(PageNum leaf_page, const char *pkey, const RID *rid);
+  ////////////20211118
+  RC insert_into_leaf(PageNum leaf_page, const char *pkey, const RID *rid, const int unique);
+  RC insert_into_leaf_after_split(PageNum leaf_page, const char *pkey, const RID *rid, const int unique);
   RC insert_into_parent(PageNum parent_page, PageNum leaf_page, const char *pkey, PageNum right_page);
   RC insert_into_new_root(PageNum leaf_page, const char *pkey, PageNum right_page);
   RC insert_intern_node(PageNum parent_page, PageNum leaf_page, PageNum right_page, const char *pkey);

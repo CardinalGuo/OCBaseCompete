@@ -19,6 +19,7 @@ BplusTreeIndex::~BplusTreeIndex() noexcept {
   close();
 }
 
+
 RC BplusTreeIndex::create(const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta) {
   if (inited_) {
     return RC::RECORD_OPENNED;
@@ -28,8 +29,8 @@ RC BplusTreeIndex::create(const char *file_name, const IndexMeta &index_meta, co
   if (rc != RC::SUCCESS) {
     return rc;
   }
-
-  rc = index_handler_.create(file_name, field_meta.type(), field_meta.len());
+///////////////////////20211118
+  rc = index_handler_.create(file_name, field_meta.type(), field_meta.len(), index_meta.is_unique());
   if (RC::SUCCESS == rc) {
     inited_ = true;
   }

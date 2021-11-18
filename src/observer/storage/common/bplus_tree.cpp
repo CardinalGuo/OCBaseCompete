@@ -17,6 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "sql/parser/parse_defs.h"
 
+
 int float_compare(float f1, float f2) {
   float result = f1 - f2;
   if (result < 1e-6 && result > -1e-6) {
@@ -36,7 +37,8 @@ RC BplusTreeHandler::sync() {
   return disk_buffer_pool_->flush_all_pages(file_id_);
 }
 
-RC BplusTreeHandler::create(const char *file_name, AttrType attr_type, int attr_length)
+////////////////////20211118
+RC BplusTreeHandler::create(const char *file_name, AttrType attr_type, int attr_length, int is_unique)
 {
   BPPageHandle page_handle;
   IndexNode *root;
@@ -78,6 +80,8 @@ RC BplusTreeHandler::create(const char *file_name, AttrType attr_type, int attr_
   file_header->node_num = 1;
   file_header->order=((int)BP_PAGE_DATA_SIZE-sizeof(IndexFileHeader)-sizeof(IndexNode))/(attr_length+2*sizeof(RID));
   file_header->root_page = page_num;
+  ////////////////////20211118
+  file_header->unique = is_unique;
 
   root = get_index_node(pdata);
   root->is_leaf = 1;
@@ -85,6 +89,8 @@ RC BplusTreeHandler::create(const char *file_name, AttrType attr_type, int attr_
   root->parent = -1;
   root->keys = nullptr;
   root->rids = nullptr;
+  ////////////////////20211118
+  root->unique = is_unique;
 
   rc = disk_buffer_pool->mark_dirty(&page_handle);
   if(rc!=SUCCESS){
@@ -186,6 +192,18 @@ int CompareKey(const char *pdata, const char *pkey,AttrType attr_type,int attr_l
       return strncmp(s1, s2, attr_length);
     }
       break;
+/////////////////////////////2021/11/18
+    case DATES: {
+      i1 = *(int *) pdata;
+      i2 = *(int *) pkey;
+      if (i1 > i2)
+        return 1;
+      if (i1 < i2)
+        return -1;
+      if (i1 == i2)
+        return 0;
+    }
+/////////////////////////////2021/11/18
     default:{
       LOG_PANIC("Unknown attr type: %d", attr_type);
     }
@@ -198,9 +216,17 @@ int CmpKey(AttrType attr_type, int attr_length, const char *pdata, const char *p
   if (0 != result) {
     return result;
   }
+  
   RID *rid1 = (RID *) (pdata + attr_length);
   RID *rid2 = (RID *) (pkey + attr_length);
   return CmpRid(rid1, rid2);
+}
+
+/////////////////////////////2021/11/18
+int CmpKey_unique(AttrType attr_type, int attr_length, const char *pdata, const char *pkey)
+{
+  int result = CompareKey(pdata, pkey, attr_type, attr_length);
+  return result;
 }
 
 RC BplusTreeHandler::find_leaf(const char *pkey,PageNum *leaf_page) {
@@ -250,7 +276,7 @@ RC BplusTreeHandler::find_leaf(const char *pkey,PageNum *leaf_page) {
   return SUCCESS;
 }
 
-RC BplusTreeHandler::insert_into_leaf(PageNum leaf_page, const char *pkey, const RID *rid)
+RC BplusTreeHandler::insert_into_leaf(PageNum leaf_page, const char *pkey, const RID *rid, const int unique)
 {
   int i,insert_pos,tmp;
   BPPageHandle  page_handle;
@@ -269,8 +295,16 @@ RC BplusTreeHandler::insert_into_leaf(PageNum leaf_page, const char *pkey, const
   }
   node = get_index_node(pdata);
 
+  ////////////////////20211118
+
   for(insert_pos = 0; insert_pos < node->key_num; insert_pos++){
-    tmp = CmpKey(file_header_.attr_type, file_header_.attr_length, pkey, node->keys + insert_pos * file_header_.key_length);
+    if(unique == 1){
+      tmp = CmpKey_unique(file_header_.attr_type, file_header_.attr_length, pkey, node->keys + insert_pos * file_header_.key_length);
+    }
+    else{
+      tmp = CmpKey(file_header_.attr_type, file_header_.attr_length, pkey, node->keys + insert_pos * file_header_.key_length);
+    }
+    
     if (tmp == 0) {
       return RC::RECORD_DUPLICATE_KEY;
     }
@@ -332,8 +366,8 @@ RC BplusTreeHandler::print() {
   }
   return rc;
 }
-
-RC BplusTreeHandler::insert_into_leaf_after_split(PageNum leaf_page, const char *pkey, const RID *rid) {
+///////////////////////20211118
+RC BplusTreeHandler::insert_into_leaf_after_split(PageNum leaf_page, const char *pkey, const RID *rid, const int unique) {
   RC rc;
   BPPageHandle  page_handle1,page_handle2;
   IndexNode *leaf,*new_node;
@@ -388,11 +422,19 @@ RC BplusTreeHandler::insert_into_leaf_after_split(PageNum leaf_page, const char 
     free(temp_keys);
     return RC::NOMEM;
   }
-
+////////////////////////20211118
   for(insert_pos=0;insert_pos<leaf->key_num;insert_pos++){
-    tmp=CmpKey(file_header_.attr_type, file_header_.attr_length, pkey, leaf->keys+insert_pos*file_header_.key_length);
+    if(unique == 1){
+      tmp=CmpKey_unique(file_header_.attr_type, file_header_.attr_length, pkey, leaf->keys+insert_pos*file_header_.key_length);
+      if(tmp == 0)
+        return RC::RECORD_DUPLICATE_KEY;
+    }
+    else{
+      tmp=CmpKey(file_header_.attr_type, file_header_.attr_length, pkey, leaf->keys+insert_pos*file_header_.key_length); 
+    }
     if(tmp<0)
       break;
+    
   }
   for(i=0,j=0;i<leaf->key_num;i++,j++){
     if(j==insert_pos)
@@ -829,7 +871,8 @@ RC BplusTreeHandler::insert_entry(const char *pkey, const RID *rid) {
       free(key);
       return rc;
     }
-    rc=insert_into_leaf(leaf_page,key,rid);
+    /////////////////20211118
+    rc=insert_into_leaf(leaf_page,key,rid,leaf->unique);
     if(rc!=SUCCESS){
       free(key);
       return rc;
@@ -845,8 +888,8 @@ RC BplusTreeHandler::insert_entry(const char *pkey, const RID *rid) {
     }
 
     // print();
-
-    rc=insert_into_leaf_after_split(leaf_page,key,rid);
+////////////////////20211118
+    rc=insert_into_leaf_after_split(leaf_page,key,rid,leaf->unique);
     free(key);
     return SUCCESS;
   }
