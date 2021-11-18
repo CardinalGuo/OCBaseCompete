@@ -11,11 +11,26 @@ See the Mulan PSL v2 for more details. */
 //
 // Created by wangyunlai.wyl on 2021/5/19.
 //
-
+#include "log/log.h"
 #include "storage/common/index.h"
 
 RC Index::init(const IndexMeta &index_meta, const FieldMeta &field_meta) {
   index_meta_ = index_meta;
   field_meta_ = field_meta;
   return RC::SUCCESS;
+}
+
+RC Index::init(const IndexMeta &index_meta, const std::vector<FieldMeta> &field_meta_vec,const int is_unique) {
+  index_meta_ = index_meta;
+  field_meta_vec_ = field_meta_vec;
+  unique_ = is_unique;
+  return RC::SUCCESS;
+}
+
+void Index::show(){
+  
+  for (auto it : field_meta_vec_){
+    LOG_INFO("%s %d %d %d",it.name(),it.len(),it.type(),it.offset());
+  }
+  LOG_INFO("%d",unique_);
 }
