@@ -11,7 +11,6 @@ See the Mulan PSL v2 for more details. */
 //
 // Created by wangyunlai.wyl on 2021/5/19.
 //
-#include "log/log.h"
 #include "storage/common/index.h"
 
 RC Index::init(const IndexMeta &index_meta, const FieldMeta &field_meta) {
@@ -29,8 +28,8 @@ RC Index::init(const IndexMeta &index_meta, const std::vector<FieldMeta> &field_
 
 void Index::show(){
   
-  for (auto it : field_meta_vec_){
-    LOG_INFO("%s %d %d %d",it.name(),it.len(),it.type(),it.offset());
-  }
-  LOG_INFO("%d",unique_);
+  // for (auto it : field_meta_vec_){
+  //   LOG_INFO("%s %d %d %d",it.name(),it.len(),it.type(),it.offset());
+  // }
+  // LOG_INFO("%d",unique_);
 }
