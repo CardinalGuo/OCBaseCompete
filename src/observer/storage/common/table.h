@@ -56,8 +56,9 @@ public:
 
   RC scan_record(Trx *trx, ConditionFilter *filter, int limit, void *context, void (*record_reader)(const char *data, void *context));
   RC scan_record_string(Trx *trx, std::vector<char *> &vector_records);
-  RC create_index(Trx *trx, const char *index_name, const char *attribute_name);
+  RC create_index(Trx *trx, const char *index_name, char *attribute_name[10],int attribute_num, int is_unique);
 
+  void show_index();
 public:
   const char *name() const;
 
