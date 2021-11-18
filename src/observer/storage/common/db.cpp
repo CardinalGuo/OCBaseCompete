@@ -133,7 +133,6 @@ RC Db::open_all_tables() {
   for (const std::string &filename : table_meta_files) {
     Table *table = new Table();
     rc = table->open(filename.c_str(), path_.c_str());
-    //table->show_index();
     if (rc != RC::SUCCESS) {
       delete table;
       LOG_ERROR("Failed to open table. filename=%s", filename.c_str());

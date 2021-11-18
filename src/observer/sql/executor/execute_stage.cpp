@@ -700,15 +700,15 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
 
   rc = select_exe.terminal_select(select_ress, types, select_res_fields);
 
-  // LOG_INFO("cal sum res");
-  // int sum = 0;
-  // for (auto it : select_ress)
-  // {
-  //   for (auto jt : it)
-  //   {
-  //     LOG_INFO("data %d %d", sum++, *(int *)jt);
-  //   }
-  // }
+  LOG_INFO("cal sum res");
+  int sum = 0;
+  for (auto it : select_ress)
+  {
+    for (auto jt : it)
+    {
+      LOG_INFO("data %d %d", sum++, *(int *)jt);
+    }
+  }
   if (rc != SUCCESS)
   {
     session_event->set_response("FAILURE\n");

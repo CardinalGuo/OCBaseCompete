@@ -23,8 +23,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/field_meta.h"
 #include "storage/common/record_manager.h"
 
-class IndexDataOperator
-{
+class IndexDataOperator {
 public:
   virtual ~IndexDataOperator() = default;
   virtual int compare(const void *data1, const void *data2) const = 0;
@@ -33,15 +32,13 @@ public:
 
 class IndexScanner;
 
-class Index
-{
+class Index {
 
 public:
   Index() = default;
   virtual ~Index() = default;
 
-  const IndexMeta &index_meta() const
-  {
+  const IndexMeta &index_meta() const {
     return index_meta_;
   }
 
@@ -51,21 +48,16 @@ public:
   virtual IndexScanner *create_scanner(CompOp comp_op, const char *value) = 0;
 
   virtual RC sync() = 0;
-  void show();
+
 protected:
-  
-  RC init(const IndexMeta &index_meta, const std::vector<FieldMeta> &field_meta_vec, const int is_unique);
   RC init(const IndexMeta &index_meta, const FieldMeta &field_meta);
 
 protected:
-  IndexMeta index_meta_;
-  FieldMeta field_meta_; /// 当前实现仅考虑一个字段的索引
-  std::vector<FieldMeta> field_meta_vec_;
-  int unique_;
+  IndexMeta   index_meta_;
+  FieldMeta   field_meta_;    /// 当前实现仅考虑一个字段的索引
 };
 
-class IndexScanner
-{
+class IndexScanner {
 public:
   IndexScanner() = default;
   virtual ~IndexScanner() = default;
@@ -74,4 +66,4 @@ public:
   virtual RC destroy() = 0;
 };
 
-#endif // __OBSERVER_STORAGE_COMMON_INDEX_H_
+#endif  // __OBSERVER_STORAGE_COMMON_INDEX_H_

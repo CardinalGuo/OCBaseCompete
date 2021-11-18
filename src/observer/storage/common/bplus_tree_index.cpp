@@ -36,22 +36,6 @@ RC BplusTreeIndex::create(const char *file_name, const IndexMeta &index_meta, co
   return rc;
 }
 
-RC BplusTreeIndex::open(const char *file_name, const IndexMeta &index_meta, std::vector<FieldMeta> &field_meta_vec, const int is_unique) {
-  if (inited_) {
-    return RC::RECORD_OPENNED;
-  }
-  RC rc = Index::init(index_meta, field_meta_vec, is_unique);
-  if (rc != RC::SUCCESS) {
-    return rc;
-  }
-
-  rc = index_handler_.open(file_name);
-  if (RC::SUCCESS == rc) {
-    inited_ = true;
-  }
-  return rc;
-}
-
 RC BplusTreeIndex::open(const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta) {
   if (inited_) {
     return RC::RECORD_OPENNED;
