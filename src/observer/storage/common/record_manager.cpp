@@ -313,22 +313,12 @@ RC RecordPageHandler::get_first_record(Record *rec)
 
 RC RecordPageHandler::get_next_record(Record *rec)
 {
-  LOG_INFO("%d%d%d%d",
-              rec->rid.slot_num,
-              file_id_,
-              page_handle_.frame->page.page_num,
-              page_header_->record_num);
   if (rec->rid.slot_num >= page_header_->record_capacity - 1)
   {
     LOG_ERROR("Invalid slot_num:%d, exceed page's record capacity, file_id:page_num %d:%d.",
               rec->rid.slot_num,
               file_id_,
               page_handle_.frame->page.page_num);
-    return RC::RECORD_EOF;
-  }
-
-  if (page_header_->record_num == rec->rid.slot_num + 1){
-    LOG_INFO("max size%d %d", page_header_->record_num ,rec->rid.slot_num + 1);
     return RC::RECORD_EOF;
   }
 
@@ -655,9 +645,9 @@ RC RecordFileScanner::get_next_record(Record *rec)
       break; // ERROR
     }
   }
-  // if (record_page_handler_.is_text()){
-  //   return RC::RECORD_EOF;
-  // }
+  if (record_page_handler_.is_text()){
+    return RC::RECORD_EOF;
+  }
 
   if (RC::SUCCESS == ret)
   {
