@@ -39,7 +39,9 @@ typedef enum {
   GREAT_EQUAL,  //">="    4
   GREAT_THAN,   //">"     5
   ATTR_IN,      // in       6
-  ATTR_NOT_IN,  //  not in      7   
+  ATTR_NOT_IN,  //  not in      7  
+  ATTR_IS,
+  ATTR_IS_NOT, 
   NO_OP
 } CompOp;
 
@@ -48,7 +50,7 @@ struct DATES {
 };
 
 //属性值类型
-typedef enum { UNDEFINED, CHARS, INTS, FLOATS ,DATES, NULL_TYPE} AttrType;
+typedef enum { UNDEFINED, CHARS, INTS, FLOATS ,DATES, TEXTS, NULL_TYPE, EMPTY_TYPE} AttrType;
 
 //属性值
 typedef struct _Value {
@@ -171,6 +173,7 @@ typedef struct {
   char *name;     // Attribute name
   AttrType type;  // Type of attribute
   size_t length;  // Length of attribute
+  int nullable;
 } AttrInfo;
 
 // struct of craete_table
@@ -280,7 +283,7 @@ void condition_init(Condition *condition, CompOp comp, int left_is_attr, RelAttr
     int right_is_attr, RelAttr *right_attr, Value *right_value);
 void condition_destroy(Condition *condition);
 
-void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t length);
+void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t length, int nullable);
 void attr_info_destroy(AttrInfo *attr_info);
 
 

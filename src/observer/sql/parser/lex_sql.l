@@ -78,10 +78,12 @@ QUOTE            [\'\"]
 [Cc][Oo][Uu][Nn][Tt]                    RETURN_TOKEN(COUNT);
 [Ii][Nn][Ff][Ii][Ll][Ee]                 RETURN_TOKEN(INFILE);
 [Ii][Nn]                                RETURN_TOKEN(IN);
+[Ii][Ss]                                RETURN_TOKEN(IS);
 [Ii][Nn][Nn][Ee][Rr]                                RETURN_TOKEN(INNER);
 [Gg][Rr][Oo][Uu][Pp]                                RETURN_TOKEN(GROUP);
 [Oo][Rr][Dd][Ee][Rr]                                RETURN_TOKEN(ORDER);
 [Uu][Nn][Ii][Qq][Uu][Ee]                RETURN_TOKEN(UNIQUE);
+[Tt][Ee][Xx][Tt]                        RETURN_TOKEN(TEXT);
 [Bb][Yy]                                RETURN_TOKEN(BY);
 [Jj][Oo][Ii][Nn]                                RETURN_TOKEN(JOIN);
 [Aa][Ss][Cc]                                RETURN_TOKEN(ASC);

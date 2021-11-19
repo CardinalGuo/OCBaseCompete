@@ -127,6 +127,7 @@ ParserContext *get_context(yyscan_t scanner)
         DOT //QUOTE
         INTO
         VALUES
+        TEXT
         FROM
         WHERE
         AND
@@ -157,6 +158,7 @@ ParserContext *get_context(yyscan_t scanner)
         LE
         GE
         NE
+        IS
 
 %union {
   struct _Attr *attr;
@@ -318,25 +320,35 @@ attr_def:
     ID_get type LBRACE number RBRACE 
 		{
 			AttrInfo attribute;
-			attr_info_init(&attribute, CONTEXT->id, $2, $4);
+			attr_info_init(&attribute, CONTEXT->id, $2, $4, 0);
 			create_table_append_attribute(&CONTEXT->ssql->sstr.create_table, &attribute);
-			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name =(char*)malloc(sizeof(char));
-			// strcpy(CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name, CONTEXT->id); 
-			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].type = $2;  
-			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].length = $4;
+			CONTEXT->value_length++;
+		}
+    |ID_get type NOT NULLL
+		{
+			AttrInfo attribute;
+			attr_info_init(&attribute, CONTEXT->id, $2, 4, 0);
+			create_table_append_attribute(&CONTEXT->ssql->sstr.create_table, &attribute);
+			
+			CONTEXT->value_length++;
+		}
+    |ID_get type NULLABLE
+		{
+			AttrInfo attribute;
+			attr_info_init(&attribute, CONTEXT->id, $2, 4, 1);
+			create_table_append_attribute(&CONTEXT->ssql->sstr.create_table, &attribute);
+			
 			CONTEXT->value_length++;
 		}
     |ID_get type
 		{
 			AttrInfo attribute;
-			attr_info_init(&attribute, CONTEXT->id, $2, 4);
+			attr_info_init(&attribute, CONTEXT->id, $2,4, 0);
 			create_table_append_attribute(&CONTEXT->ssql->sstr.create_table, &attribute);
-			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name=(char*)malloc(sizeof(char));
-			// strcpy(CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name, CONTEXT->id); 
-			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].type=$2;  
-			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].length=4; // default attribute length
+			
 			CONTEXT->value_length++;
 		}
+		
     ;
 number:
 		NUMBER {$$ = $1;}
@@ -346,6 +358,7 @@ type:
        | STRING_T { $$=CHARS; }
        | FLOAT_T { $$=FLOATS; }
        | DATE {$$=DATES;}
+       | TEXT {$$=TEXTS;}
        ;
 ID_get:
 	ID 
@@ -637,6 +650,14 @@ expression:
     }
     | NUMBER {
         value_init_integer(&CONTEXT->values[CONTEXT->value_length++], $1);
+        Value *value = &CONTEXT->values[CONTEXT->value_length - 1];
+        Expression exp_leaf;
+        expression_init_leaf(&exp_leaf, value);
+        CONTEXT->exp_array[CONTEXT->exp_num++] = exp_leaf;
+        $$ = &CONTEXT->exp_array[CONTEXT->exp_num - 1];
+    }
+    | NULLL {
+        value_init_NULL(&CONTEXT->values[CONTEXT->value_length++], "gay");
         Value *value = &CONTEXT->values[CONTEXT->value_length - 1];
         Expression exp_leaf;
         expression_init_leaf(&exp_leaf, value);
@@ -961,6 +982,8 @@ comOp:
     | NE { $$ = NOT_EQUAL; }
     | IN {$$ = ATTR_IN;}
     | NOT IN{$$ = ATTR_NOT_IN;}
+    | IS {$$ = ATTR_IS;}
+    | IS NOT {$$ = ATTR_IS_NOT;}
     ;
 
 load_data:

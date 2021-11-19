@@ -103,7 +103,6 @@ void value_init_integer(Value *value, int v) {
 
 void value_init_NULL(Value *value, const char * v) {
   value->type = NULL_TYPE;
-  value->data = strdup(v);
 }
 
 void value_init_float(Value *value, float v) {
@@ -196,10 +195,15 @@ void complex_condition_destroy(Condition_Composite *condition){
   condition->select_attr_right = nullptr;
   free(condition);
 }
-void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t length) {
+void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t length,int nullable) {
   attr_info->name = strdup(name);
   attr_info->type = type;
   attr_info->length = length;
+  
+  if (type == TEXTS) attr_info->length = 12;
+  
+  attr_info->nullable = nullable;
+  attr_info->length++;
 }
 void attr_info_destroy(AttrInfo *attr_info) {
   free(attr_info->name);

@@ -198,7 +198,7 @@ RC Table::open(const char *meta_file, const char *base_dir)
       }
       field_meta_vec.push_back(*field_meta);
     }
-    
+
     BplusTreeIndex *index = new BplusTreeIndex();
     std::string index_file = index_data_file(base_dir, name(), index_meta->name());
     rc = index->open(index_file.c_str(), *index_meta, field_meta_vec, index_meta->is_unique());
@@ -213,8 +213,10 @@ RC Table::open(const char *meta_file, const char *base_dir)
   }
   return rc;
 }
-void Table::show_index(){
-  for (auto it : indexes_){
+void Table::show_index()
+{
+  for (auto it : indexes_)
+  {
     it->show();
   }
 }
@@ -399,15 +401,21 @@ RC Table::make_record(int value_num, const Value *values, char *&record_out)
       //date.append(std::to_string(year)).append("-").append(std::to_string(month)).append("-").append(std::to_string(day));
       //value.data = date.c_str();
     }
-
     //检验字段是否 date == char*
     if (field->type() != value.type)
     {
-      if (field->type() == DATES && value.type == CHARS)
+      if (value.type == NULL_TYPE && field->nullable())
+      {
         continue;
-      LOG_ERROR("Invalid value type. field name=%s, type=%d, but given=%d",
-                field->name(), field->type(), value.type);
-      return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+      }
+      else if (field->type() == DATES && value.type == CHARS || field->type() == TEXTS && value.type == CHARS)
+        continue;
+      else
+      {
+        LOG_ERROR("Invalid value type. field name=%s, type=%d, but given=%d",
+                  field->name(), field->type(), value.type);
+        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+      }
     }
   }
 
@@ -423,10 +431,38 @@ RC Table::make_record(int value_num, const Value *values, char *&record_out)
     {
       int num = check_trans::date_to_num(value.data);
       memcpy(record + field->offset(), &num, field->len());
+
+      char notnu = '0';
+      memcpy(record + field->offset() + field->len() - 1, &notnu, sizeof(char));
+    }
+    else if (field->type() == TEXTS)
+    {
+      RC ret = RC::SUCCESS;
+      BPPageHandle text_bp_handle;
+      if ((ret = data_buffer_pool_->allocate_page(file_id_, &text_bp_handle)) != RC::SUCCESS)
+      {
+        LOG_ERROR("Failed to allocate page while inserting record_texxxxxxxxxt");
+      }
+      data_buffer_pool_->mark_dirty(&text_bp_handle);
+      int pg_num = text_bp_handle.frame->page.page_num;
+      memcpy(text_bp_handle.frame->page.data, value.data + 4 * sizeof(char), sizeof(char) * 4092);
+      LOG_INFO("text %d %d %s", file_id_, pg_num, text_bp_handle.frame->page.data);
+      memcpy(record + field->offset(), &file_id_, sizeof(int));
+      memcpy(record + field->offset() + sizeof(int), &pg_num, sizeof(int));
+      memcpy(record + field->offset() + 2 * sizeof(int), value.data, sizeof(int));
+
+      char notnu = '0';
+      memcpy(record + field->offset() + field->len() - 1, &notnu, sizeof(char));
+    }
+    else if(value.type == NULL_TYPE && field->nullable()){
+      char nu = '1';
+      memcpy(record + field->offset() + field->len() - 1, &nu, sizeof(char));
     }
     else
     {
+      char notnu = '0';
       memcpy(record + field->offset(), value.data, field->len());
+      memcpy(record + field->offset() + field->len() - 1, &notnu, sizeof(char));
     }
   }
 
@@ -508,8 +544,9 @@ RC Table::scan_record_string(Trx *trx, std::vector<char *> &vector_records)
   int limit = INT_MAX;
   int record_count = 0;
   Record record;
+  LOG_INFO("getting first record");
   rc = scanner.get_first_record(&record);
-
+  LOG_INFO("get first record");
   for (; RC::SUCCESS == rc && record_count < limit; rc = scanner.get_next_record(&record))
   {
     if (trx == nullptr || trx->is_visible(this, &record))
@@ -835,15 +872,19 @@ RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value
     if (i->type() == value->type)
     {
       flag = 1;
-    }else{
-      if (i->type() == DATES && value->type == CHARS){
+    }
+    else
+    {
+      if (i->type() == DATES && value->type == CHARS)
+      {
         val_tmp.type = INTS;
         is_date = true;
-        if (check_trans::check_date((char *)value->data)){
+        if (check_trans::check_date((char *)value->data))
+        {
           flag = 1;
           int date_tmp = check_trans::date_to_num(value->data);
           val_tmp.data = malloc(sizeof(int));
-          memcpy(val_tmp.data,&date_tmp,sizeof(int));
+          memcpy(val_tmp.data, &date_tmp, sizeof(int));
         }
       }
     }
@@ -862,7 +903,7 @@ RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value
   filter_val.init(*this, conditions, condition_num);
   CompositeConditionFilter *filter = &filter_val;
 
-  RecordUpdater updater(*this, trx, attribute_name, is_date ? &val_tmp :value);
+  RecordUpdater updater(*this, trx, attribute_name, is_date ? &val_tmp : value);
   RC rc = scan_record(trx, filter, -1, &updater, record_reader_update_adapter);
   if (updated_count != nullptr)
   {

@@ -745,38 +745,86 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
         {
         case INTS:
         {
-          int tmp_int = *(int *)(select_ress[j][i]);
+          if ('1' == *((char *)select_ress[j][i] + sizeof(int)))
+          {
+            ss << "null";
+          }
+          else
+          {
+            int tmp_int = *(int *)(select_ress[j][i]);
 
-          ss << tmp_int ;
+            ss << tmp_int;
+          }
         }
         break;
         case FLOATS:
         {
-          float tmp_float = *(float *)select_ress[j][i];
-          tmp_float = round(tmp_float * 100) / 100.0;
-          ss << tmp_float ;
+          if ('1' == *((char *)select_ress[j][i] + sizeof(int)))
+          {
+            ss << "null";
+          }
+          else
+          {
+            float tmp_float = *(float *)select_ress[j][i];
+            tmp_float = round(tmp_float * 100) / 100.0;
+            ss << tmp_float;
+          }
         }
         break;
         case DATES:
         {
-          int tmp_int = *(int *)(select_ress[j][i]);
-          std::string date = std::to_string(tmp_int);
-          date.insert(6,"-");
-          date.insert(4,"-");
-          ss << date ;
+          if ('1' == *((char *)select_ress[j][i] + sizeof(int)))
+          {
+            ss << "null";
+          }
+          else
+          {
+            int tmp_int = *(int *)(select_ress[j][i]);
+            std::string date = std::to_string(tmp_int);
+            date.insert(6, "-");
+            date.insert(4, "-");
+            ss << date;
+          }
         }
         break;
         case CHARS:
         {
-          const char *str = (char *)select_ress[j][i];
-          ss << str ;
+          if ('0' == *((char *)select_ress[j][i] + sizeof(int)))
+          {
+            ss << "null";
+          }
+          else
+          {
+            const char *str = (char *)select_ress[j][i];
+            ss << str;
+          }
         }
         break;
+        case TEXTS:
+        {
+          if ('0' == *((char *)select_ress[j][i] + 3 * sizeof(int)))
+          {
+            ss << "null";
+          }
+          else
+          {
+            int file_num = *(int *)select_ress[j][i];
+            PageNum page_num = *(int *)(select_ress[j][i] + 4);
+            char text_tmp[4097];
+            text_tmp[4096] = '\0';
+            DiskBufferPool *data_buffer_pool_ = theGlobalDiskBufferPool();
+            BPPageHandle bpph;
+            data_buffer_pool_->get_this_page(file_num, page_num, &bpph);
+            memcpy(text_tmp, select_ress[j][i] + 8, 4 * sizeof(char));
+            memcpy(text_tmp + 4, bpph.frame->page.data, 4096 * sizeof(char));
+            ss << text_tmp;
+          }
+        }
         default:
           break;
         }
         free(select_ress[j][i]);
-        if (j != select_ress.size() -1)
+        if (j != select_ress.size() - 1)
           ss << " | ";
       }
 
