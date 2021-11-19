@@ -1,2 +1,0 @@
-insert into t2 values (1,3),(2,5),(3,7);
-select max(id), min(id), count(id), avg(id) from t2;
