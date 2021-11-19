@@ -430,7 +430,8 @@ void get_max_min_value(std::vector<void *> &left, AttrType attr_left, std::vecto
         {
             if (!get_unit)
             {
-                if ('0' == *((char *)left[index]) + 4 * sizeof(char))
+
+                if ('0' == *((char *)left[index] + 4 * sizeof(char)))
                 {
                     value = malloc(sizeof(char) * 5);
                     memcpy(value, left[index], sizeof(int));
@@ -441,7 +442,7 @@ void get_max_min_value(std::vector<void *> &left, AttrType attr_left, std::vecto
             }
             else
             {
-                if ('0' == *((char *)left[index]) + 4 * sizeof(char))
+                if ('0' == *((char *)left[index] + 4 * sizeof(char)))
                 {
                     int sub_v = *(int *)value - *(int *)left[index];
 
@@ -462,7 +463,7 @@ void get_max_min_value(std::vector<void *> &left, AttrType attr_left, std::vecto
         {
             if (!get_unit)
             {
-                if ('0' == *((char *)left[index]) + 4 * sizeof(char))
+                if ('0' == *((char *)left[index] + 4 * sizeof(char)))
                 {
                     value = malloc(sizeof(char) * 5);
                     memcpy(value, left[index], sizeof(int));
@@ -473,7 +474,7 @@ void get_max_min_value(std::vector<void *> &left, AttrType attr_left, std::vecto
             }
             else
             {
-                if ('0' == *((char *)left[index]) + 4 * sizeof(char))
+                if ('0' == *((char *)left[index] + 4 * sizeof(char)))
                 {
                     float sub_v = *(float *)value - *(float *)left[index];
                     if (sub_v * max_min < 0)
@@ -493,7 +494,7 @@ void get_max_min_value(std::vector<void *> &left, AttrType attr_left, std::vecto
         {
             if (!get_unit)
             {
-                if ('0' == *((char *)left[index]) + 4 * sizeof(char))
+                if ('0' == *((char *)left[index] + 4 * sizeof(char)))
                 {
                     value = malloc(sizeof(char) * 5);
                     memcpy(value, left[index], sizeof(int));
@@ -504,7 +505,7 @@ void get_max_min_value(std::vector<void *> &left, AttrType attr_left, std::vecto
             }
             else
             {
-                if ('0' == *((char *)left[index]) + 4 * sizeof(char))
+                if ('0' == *((char *)left[index] + 4 * sizeof(char)))
                 {
                     int cmp = *(int *)value - *(int *)left[index];
                     if (cmp * max_min < 0)
@@ -524,7 +525,8 @@ void get_max_min_value(std::vector<void *> &left, AttrType attr_left, std::vecto
         {
             if (!get_unit)
             {
-                if ('0' == *((char *)left[index]) + 4 * sizeof(char))
+
+                if ('0' == *((char *)left[index] + 4 * sizeof(char)))
                 {
                     value = malloc(sizeof(char) * 5);
                     memcpy(value, left[index], sizeof(int));
@@ -535,7 +537,7 @@ void get_max_min_value(std::vector<void *> &left, AttrType attr_left, std::vecto
             }
             else
             {
-                if ('0' == *((char *)left[index]) + 4 * sizeof(char))
+                if ('0' == *((char *)left[index] + 4 * sizeof(char)))
                 {
                     int cmp = strcmp((char *)value, (char *)left[index]);
                     if (cmp * max_min < 0)
