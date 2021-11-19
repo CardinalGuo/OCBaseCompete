@@ -200,7 +200,7 @@ void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t
   attr_info->type = type;
   attr_info->length = length;
   
-  if (type == TEXTS) attr_info->length = 12;
+  if (type == TEXTS) attr_info->length = 16;
   
   attr_info->nullable = nullable;
   attr_info->length++;

@@ -796,7 +796,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                 break;
                 case TEXTS:
                 {
-                    if ('0' == *((char *)it + 12 * sizeof(char)))
+                    if ('0' == *((char *)it + 16 * sizeof(char)))
                     {
                         sum++;
                     }

@@ -50,7 +50,7 @@ public:
   RecordPageHandler();
   ~RecordPageHandler();
   RC init(DiskBufferPool &buffer_pool, int file_id, PageNum page_num);
-  RC init_empty_page(DiskBufferPool &buffer_pool, int file_id, PageNum page_num, int record_size);
+  RC init_empty_page(DiskBufferPool &buffer_pool, int file_id, PageNum page_num, int record_size, int type);
   RC deinit();
 
   RC insert_record(const char *data, RID *rid);
@@ -75,7 +75,7 @@ public:
   RC get_next_record(Record *rec);
 
   PageNum get_page_num() const;
-
+  bool is_text() const;
   bool is_full() const;
 
 private:

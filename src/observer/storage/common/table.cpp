@@ -445,12 +445,14 @@ RC Table::make_record(int value_num, const Value *values, char *&record_out)
       }
       data_buffer_pool_->mark_dirty(&text_bp_handle);
       int pg_num = text_bp_handle.frame->page.page_num;
-      memcpy(text_bp_handle.frame->page.data, value.data + 4 * sizeof(char), sizeof(char) * 4092);
-      LOG_INFO("text %d %d %s", file_id_, pg_num, text_bp_handle.frame->page.data);
+      int type = 1;
+      memcpy(text_bp_handle.frame->page.data , &type, sizeof(int));
+      memcpy(text_bp_handle.frame->page.data + sizeof(int), value.data + 8 * sizeof(char), sizeof(char) * 4088);
+      LOG_INFO("text %d %d %s", file_id_, pg_num, text_bp_handle.frame->page.data + 4);
       memcpy(record + field->offset(), &file_id_, sizeof(int));
       memcpy(record + field->offset() + sizeof(int), &pg_num, sizeof(int));
-      memcpy(record + field->offset() + 2 * sizeof(int), value.data, sizeof(int));
-
+      memcpy(record + field->offset() + 2 * sizeof(int), value.data, 8 * sizeof(char));
+      LOG_INFO("%d %d %s",*(int*)(record + field->offset()), *(int*)(record + field->offset() + sizeof(int)), record + field->offset() + 2 * sizeof(int));
       char notnu = '0';
       memcpy(record + field->offset() + field->len() - 1, &notnu, sizeof(char));
     }
@@ -549,8 +551,10 @@ RC Table::scan_record_string(Trx *trx, std::vector<char *> &vector_records)
   LOG_INFO("get first record");
   for (; RC::SUCCESS == rc && record_count < limit; rc = scanner.get_next_record(&record))
   {
+    
     if (trx == nullptr || trx->is_visible(this, &record))
     {
+      LOG_INFO("d",record_count);
       std::string rec_str;
       //memcpy(rec_str, record.data);
       // LOG_INFO("%d %d",*(record.data + 0),*(record.data + 4));

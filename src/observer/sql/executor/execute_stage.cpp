@@ -815,8 +815,8 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
             DiskBufferPool *data_buffer_pool_ = theGlobalDiskBufferPool();
             BPPageHandle bpph;
             data_buffer_pool_->get_this_page(file_num, page_num, &bpph);
-            memcpy(text_tmp, select_ress[j][i] + 8, 4 * sizeof(char));
-            memcpy(text_tmp + 4, bpph.frame->page.data, 4096 * sizeof(char));
+            memcpy(text_tmp, select_ress[j][i] + 8, 8 * sizeof(char));
+            memcpy(text_tmp + 8, bpph.frame->page.data + 4, 4088 * sizeof(char));
             ss << text_tmp;
           }
         }
