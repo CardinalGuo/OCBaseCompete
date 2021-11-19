@@ -446,17 +446,18 @@ RC Table::make_record(int value_num, const Value *values, char *&record_out)
       data_buffer_pool_->mark_dirty(&text_bp_handle);
       int pg_num = text_bp_handle.frame->page.page_num;
       int type = 1;
-      memcpy(text_bp_handle.frame->page.data , &type, sizeof(int));
+      memcpy(text_bp_handle.frame->page.data, &type, sizeof(int));
       memcpy(text_bp_handle.frame->page.data + sizeof(int), value.data + 8 * sizeof(char), sizeof(char) * 4088);
       LOG_INFO("text %d %d %s", file_id_, pg_num, text_bp_handle.frame->page.data + 4);
       memcpy(record + field->offset(), &file_id_, sizeof(int));
       memcpy(record + field->offset() + sizeof(int), &pg_num, sizeof(int));
       memcpy(record + field->offset() + 2 * sizeof(int), value.data, 8 * sizeof(char));
-      LOG_INFO("%d %d %s",*(int*)(record + field->offset()), *(int*)(record + field->offset() + sizeof(int)), record + field->offset() + 2 * sizeof(int));
+      LOG_INFO("%d %d %s", *(int *)(record + field->offset()), *(int *)(record + field->offset() + sizeof(int)), record + field->offset() + 2 * sizeof(int));
       char notnu = '0';
       memcpy(record + field->offset() + field->len() - 1, &notnu, sizeof(char));
     }
-    else if(value.type == NULL_TYPE && field->nullable()){
+    else if (value.type == NULL_TYPE && field->nullable())
+    {
       char nu = '1';
       memcpy(record + field->offset() + field->len() - 1, &nu, sizeof(char));
     }
@@ -551,10 +552,10 @@ RC Table::scan_record_string(Trx *trx, std::vector<char *> &vector_records)
   LOG_INFO("get first record");
   for (; RC::SUCCESS == rc && record_count < limit; rc = scanner.get_next_record(&record))
   {
-    
+
     if (trx == nullptr || trx->is_visible(this, &record))
     {
-      LOG_INFO("d",record_count);
+      LOG_INFO("d", record_count);
       std::string rec_str;
       //memcpy(rec_str, record.data);
       // LOG_INFO("%d %d",*(record.data + 0),*(record.data + 4));
@@ -891,6 +892,10 @@ RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value
           memcpy(val_tmp.data, &date_tmp, sizeof(int));
         }
       }
+      else if (i->type() == TEXTS && value->type == CHARS)
+      {
+        flag = 1;
+      }
     }
   }
   if (flag == 0)
@@ -919,7 +924,24 @@ RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value
 RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value, Record *record)
 {
   FieldMeta f = *this->table_meta().field(attribute_name);
-  memcpy(record->data + f.offset(), value->data, sizeof(value->type));
+  if (f.type() == TEXTS)
+  {
+    int file_num = *(int *)(record->data + f.offset());
+    int page_num = *(int *)(record->data + f.offset() + sizeof(int));
+    memcpy(record->data + f.offset() + 2 * sizeof(int), value->data, sizeof(char) * 8);
+    RC ret = SUCCESS;
+    BPPageHandle text_bp_handle;
+    if ((ret = data_buffer_pool_->get_this_page(file_num, page_num, &text_bp_handle)) != RC::SUCCESS)
+    {
+      LOG_ERROR("Failed to allocate page while inserting record_texxxxxxxxxt");
+      data_buffer_pool_->mark_dirty(&text_bp_handle);
+      memcpy(text_bp_handle.frame->page.data +  sizeof(int), value->data + 2 * sizeof(int), sizeof(char) * 4088);
+    }
+  }
+  else
+  {
+    memcpy(record->data + f.offset(), value->data, sizeof(value->type));
+  }
   RC rc = record_handler_->update_record(record);
   //  更新索引                                                                                                                  2021/10/26 14:12
   Index *i = this->find_index(attribute_name);
