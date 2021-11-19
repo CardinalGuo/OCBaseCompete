@@ -655,9 +655,9 @@ RC RecordFileScanner::get_next_record(Record *rec)
       break; // ERROR
     }
   }
-  if (record_page_handler_.is_text()){
-    return RC::RECORD_EOF;
-  }
+  // if (record_page_handler_.is_text()){
+  //   return RC::RECORD_EOF;
+  // }
 
   if (RC::SUCCESS == ret)
   {
