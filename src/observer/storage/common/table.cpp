@@ -934,6 +934,7 @@ RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value
     if ((ret = data_buffer_pool_->get_this_page(file_num, page_num, &text_bp_handle)) != RC::SUCCESS)
     {
       LOG_ERROR("Failed to allocate page while inserting record_texxxxxxxxxt");
+    }else{
       data_buffer_pool_->mark_dirty(&text_bp_handle);
       memcpy(text_bp_handle.frame->page.data +  sizeof(int), value->data + 2 * sizeof(int), sizeof(char) * 4088);
     }
