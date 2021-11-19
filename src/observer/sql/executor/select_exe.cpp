@@ -974,7 +974,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                 res_type = INTS;
                 if (left.size() > 0)
                 {
-                    void *value = malloc(sizeof(int));
+                    void *value = malloc(sizeof(char) * 5);
                     bool get_num = false;
                     int avg_int = 0;
                     int sz = 0;
@@ -991,7 +991,10 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                     {
                         ////LOG_INFO("%f",avg);
                         memcpy(value, &avg_int, sizeof(avg_int));
+                        
                         values_vec.push_back(value);
+                    }else{
+                        
                     }
                 }
             }
@@ -1000,7 +1003,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                 res_type = FLOATS;
                 if (left.size() > 0)
                 {
-                    void *value = malloc(sizeof(int));
+                    void *value = malloc(sizeof(char) * 5);
                     int avg_int = 0;
                     bool get_num = false;
                     float avg_float = 0.0;
@@ -1019,12 +1022,17 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                     }
                     if (get_num)
                     {
+                        char not_null = '0';
                         float avg = attr_left == INTS ? (float)(avg_int) / (float)(sz) : avg_float / (float)sz;
                         res_type = FLOATS;
                         ////LOG_INFO("%f",avg);
                         memcpy(value, &avg, sizeof(avg));
-                        values_vec.push_back(value);
+                        memcpy(value + 4 * sizeof(char), &not_null, sizeof(char));
+                    }else{
+                        char is_null = '1';
+                        memcpy(value + 4 * sizeof(char), &is_null, sizeof(char));
                     }
+                    values_vec.push_back(value);
                 }
             }
 
