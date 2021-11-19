@@ -419,6 +419,7 @@ void SelectExe::do_group_by(std::vector<char *> &records)
 void get_max_min_value(std::vector<void *> &left, AttrType attr_left, std::vector<void *> &values_vec, int max_min)
 {
     char not_null = '0';
+    char is_null = '1';
     void *value;
     bool get_unit = false;
     switch (attr_left)
@@ -555,6 +556,13 @@ void get_max_min_value(std::vector<void *> &left, AttrType attr_left, std::vecto
     }
     if (get_unit)
         values_vec.push_back(value);
+    else{
+        if (left.size() > 0){
+            value = malloc(sizeof(char) * 5);
+            memcpy(value + 4 * sizeof(char), &is_null, sizeof(char));
+            values_vec.push_back(value);
+        }
+    }
 }
 
 RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *expression, int group_index, AttrType &res_type, int deep)
