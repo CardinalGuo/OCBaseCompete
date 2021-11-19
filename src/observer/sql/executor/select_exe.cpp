@@ -778,7 +778,7 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                 case DATES:
                 case CHARS:
                 {
-                    if ('0' != *((char *)it + 4 * sizeof(char)))
+                    if ('0' == *((char *)it + 4 * sizeof(char)))
                     {
                         sum++;
                     }
@@ -786,10 +786,14 @@ RC SelectExe::calculate_expression(std::vector<void *> &values_vec, Expression *
                 break;
                 case TEXTS:
                 {
-                    if ('0' != *((char *)it + 12 * sizeof(char)))
+                    if ('0' == *((char *)it + 12 * sizeof(char)))
                     {
                         sum++;
                     }
+                }
+                case UNDEFINED:
+                {
+                    sum = left.size();
                 }
                 break;
                 default:
