@@ -427,7 +427,7 @@ RC Table::make_record(int value_num, const Value *values, char *&record_out)
   {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value &value = values[i];
-    if (field->type() == DATES)
+    if (field->type() == DATES && value.type != NULL_TYPE)
     {
       int num = check_trans::date_to_num(value.data);
       memcpy(record + field->offset(), &num, field->len());
@@ -435,7 +435,7 @@ RC Table::make_record(int value_num, const Value *values, char *&record_out)
       char notnu = '0';
       memcpy(record + field->offset() + field->len() - 1, &notnu, sizeof(char));
     }
-    else if (field->type() == TEXTS)
+    else if (field->type() == TEXTS && value.type != NULL_TYPE)
     {
       RC ret = RC::SUCCESS;
       BPPageHandle text_bp_handle;
