@@ -789,7 +789,7 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
         break;
         case CHARS:
         {
-          if ('0' == *((char *)select_ress[j][i] + sizeof(int)))
+          if ('1' == *((char *)select_ress[j][i] + sizeof(int)))
           {
             ss << "null";
           }
@@ -802,7 +802,7 @@ RC ExecuteStage::do_select(const char *db, Query *sql, SessionEvent *session_eve
         break;
         case TEXTS:
         {
-          if ('0' == *((char *)select_ress[j][i] + 3 * sizeof(int)))
+          if ('1' == *((char *)select_ress[j][i] + 3 * sizeof(int)))
           {
             ss << "null";
           }
