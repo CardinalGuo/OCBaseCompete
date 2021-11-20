@@ -73,7 +73,7 @@ RC BplusTreeHandler::create(const char *file_name, std::vector<AttrType> attr_ty
   }
   IndexFileHeader *file_header =(IndexFileHeader *)pdata;
   file_header->field_num = (int)attr_types.size() + 1;
-  if (file_header->field_num > 5)
+  if (file_header->field_num > 10)
   {
     rc = RC::INVALID_ARGUMENT;
     LOG_ERROR("too many muti index num %d", file_header->field_num);
