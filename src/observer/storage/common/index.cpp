@@ -22,7 +22,7 @@ RC Index::init(const IndexMeta &index_meta, const FieldMeta &field_meta) {
 RC Index::init(const IndexMeta &index_meta, const std::vector<FieldMeta> &field_meta_vec,const int is_unique) {
   index_meta_ = index_meta;
   field_meta_vec_ = field_meta_vec;
-  unique_ = is_unique;
+  unique_ = index_meta.is_unique();
   return RC::SUCCESS;
 }
 

@@ -21,9 +21,8 @@ See the Mulan PSL v2 for more details. */
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
-
 #include <vector>
-
+#include <unordered_map>
 #include "rc.h"
 
 typedef int PageNum;

@@ -265,6 +265,7 @@ RC Table::insert_record(Trx *trx, Record *record)
     trx->init_trx_info(this, *record);
   }
   rc = record_handler_->insert_record(record->data, table_meta_.record_size(), &record->rid);
+  LOG_INFO("record_insert %d", rc);
   if (rc != RC::SUCCESS)
   {
     LOG_ERROR("Insert record failed. table name=%s, rc=%d:%s", table_meta_.name(), rc, strrc(rc));
@@ -289,13 +290,18 @@ RC Table::insert_record(Trx *trx, Record *record)
   }
 
   rc = insert_entry_of_indexes(record->data, record->rid);
+  LOG_INFO("record_insert %d", rc);
   if (rc != RC::SUCCESS)
   {
-    RC rc2 = delete_entry_of_indexes(record->data, record->rid, true);
-    if (rc2 != RC::SUCCESS)
+    RC rc2 = RC::SUCCESS;
+    if (rc != RC::RECORD_DUPLICATE_KEY)
     {
-      LOG_PANIC("Failed to rollback index data when insert index entries failed. table name=%s, rc=%d:%s",
-                name(), rc2, strrc(rc2));
+      rc2 = delete_entry_of_indexes(record->data, record->rid, true);
+      if (rc2 != RC::SUCCESS)
+      {
+        LOG_PANIC("Failed to rollback index data when insert index entries failed. table name=%s, rc=%d:%s",
+                  name(), rc2, strrc(rc2));
+      }
     }
     rc2 = record_handler_->delete_record(&record->rid);
     if (rc2 != RC::SUCCESS)
@@ -744,8 +750,7 @@ RC Table::create_index(Trx *trx, const char *index_name, char *attribute_name[10
   BplusTreeIndex *index = new BplusTreeIndex();
 
   std::string index_file = index_data_file(base_dir_.c_str(), name(), index_name);
-
-  rc = index->create(index_file.c_str(), new_index_meta, field_vec[0]);
+  rc = index->create(index_file.c_str(), new_index_meta, field_vec);
   if (rc != RC::SUCCESS)
   {
     delete index;
@@ -934,9 +939,11 @@ RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value
     if ((ret = data_buffer_pool_->get_this_page(file_num, page_num, &text_bp_handle)) != RC::SUCCESS)
     {
       LOG_ERROR("Failed to allocate page while inserting record_texxxxxxxxxt");
-    }else{
+    }
+    else
+    {
       data_buffer_pool_->mark_dirty(&text_bp_handle);
-      memcpy(text_bp_handle.frame->page.data +  sizeof(int), value->data + 2 * sizeof(int), sizeof(char) * 4088);
+      memcpy(text_bp_handle.frame->page.data + sizeof(int), value->data + 2 * sizeof(int), sizeof(char) * 4088);
     }
   }
   else

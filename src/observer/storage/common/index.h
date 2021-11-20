@@ -53,7 +53,6 @@ public:
   virtual RC sync() = 0;
   void show();
 protected:
-  
   RC init(const IndexMeta &index_meta, const std::vector<FieldMeta> &field_meta_vec, const int is_unique);
   RC init(const IndexMeta &index_meta, const FieldMeta &field_meta);
 

@@ -19,14 +19,18 @@ See the Mulan PSL v2 for more details. */
 #include "sql/parser/parse_defs.h"
 
 struct IndexFileHeader {
-  int attr_length;
+  int attr_length_total;
+
   int key_length;
-  AttrType attr_type;
   PageNum root_page; // 初始时，root_page一定是1
   int node_num;
   int order;
 /////////////////////////////2021/11/18
   int unique;
+  int field_num;
+  AttrType attr_types[8];
+  int attr_lengths[8];
+  
 /////////////////////////////2021/11/18
 };
 
@@ -64,7 +68,7 @@ public:
    */
   ////////////////////////////////////20211118
   RC create(const char *file_name, AttrType attr_type, int attr_length, int is_unique);
-
+  RC create(const char *file_name, AttrType attr_type[], int attr_length[], int is_unique, int field_num);
   /**
    * 打开名为fileName的索引文件。
    * 如果方法调用成功，则indexHandle为指向被打开的索引句柄的指针。
