@@ -19,6 +19,73 @@ See the Mulan PSL v2 for more details. */
 
 using namespace common;
 
+
+//////////把node从链表上取下来
+void BPManager::remove(CacheNode *node){
+  node->pre->next = node->next; 
+  node->next->pre = node->pre;
+  node->next = nullptr;
+  node->pre = nullptr;
+}
+
+//////////把node放在链表头部
+void BPManager::setHead(CacheNode *node){
+  head->next->pre = node;
+  node->next = head->next;
+  node->pre = head;
+  head->next = node; 
+}
+
+CacheNode* BPManager::get_lru(int file_desc, PageNum page_num){
+  std::string id = std::to_string(file_desc) + std::to_string(page_num);
+  std::unordered_map<std::string, CacheNode*>::iterator iter = lru_map.find(id);
+
+  if (iter == lru_map.end()){
+    return nullptr;
+  }else{
+    CacheNode *node = iter->second;
+    remove(node);
+    setHead(node);
+    return node;
+  }
+  return nullptr;
+}
+
+
+CacheNode* BPManager::alloc_lru(int file_desc, PageNum page_num){
+  std::string id = std::to_string(file_desc) + std::to_string(page_num);
+  if (alloc_num == size){           
+    CacheNode* p = tail->pre;
+    remove(p);   
+  //tail->frame->clear();
+    setHead(p);
+  //把被删掉的页在map里的内容删掉
+    lru_map.erase(p->id);
+  //在map里加入新页和这个节点
+    p->id = id;
+    lru_map.insert(std::pair<std::string, CacheNode*>(id, p));
+    return p;
+  }else{
+    alloc_num++;
+    CacheNode* c = empty_frame.top();
+    empty_frame.pop();
+    c->id = id;
+    lru_map.insert(std::pair<std::string, CacheNode*>(id, c));
+    allocated[c->frame_number] = true;
+    setHead(c);
+  }
+}
+
+void BPManager::dispose_lru(int file_desc, PageNum page_num){
+  std::string id = std::to_string(file_desc) + std::to_string(page_num);
+  auto iter = lru_map.find(id);
+  CacheNode* p = iter->second;
+  remove(p);
+  allocated[p->frame_number] = false;
+  empty_frame.push(p);
+}
+
+
 unsigned long current_time()
 {
   struct timespec tp;
@@ -26,12 +93,13 @@ unsigned long current_time()
   return tp.tv_sec * 1000 * 1000 * 1000UL + tp.tv_nsec;
 }
 
+
 DiskBufferPool *theGlobalDiskBufferPool()
 {
   static DiskBufferPool *instance = new DiskBufferPool();
-
   return instance;
 }
+
 
 RC DiskBufferPool::create_file(const char *file_name)
 {
