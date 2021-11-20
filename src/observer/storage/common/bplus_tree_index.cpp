@@ -18,28 +18,7 @@ See the Mulan PSL v2 for more details. */
 BplusTreeIndex::~BplusTreeIndex() noexcept {
   close();
 }
-RC BplusTreeIndex::create(const char *file_name, const IndexMeta &index_meta, std::vector<FieldMeta> &field_meta_vec) {
-  if (inited_) {
-    return RC::RECORD_OPENNED;
-  }
 
-  RC rc = Index::init(index_meta, field_meta_vec, index_meta.is_unique());
-  if (rc != RC::SUCCESS) {
-    return rc;
-  } 
-///////////////////////202111120
-  std::vector<AttrType> attr_types;
-  std::vector<int> attr_lengths;
-  for (auto it : field_meta_vec){
-    attr_types.push_back(it.type());
-    attr_lengths.push_back(it.len());
-  }
-  rc = index_handler_.create(file_name, attr_types, attr_lengths, index_meta.is_unique());
-  if (RC::SUCCESS == rc) {
-    inited_ = true;
-  }
-  return rc;
-}
 
 RC BplusTreeIndex::create(const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta) {
   if (inited_) {

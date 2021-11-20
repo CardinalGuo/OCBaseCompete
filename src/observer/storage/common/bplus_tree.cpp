@@ -36,7 +36,9 @@ IndexNode * BplusTreeHandler::get_index_node(char *page_data) const {
 RC BplusTreeHandler::sync() {
   return disk_buffer_pool_->flush_all_pages(file_id_);
 }
-RC BplusTreeHandler::create(const char *file_name, std::vector<AttrType> attr_types, std::vector<int> attr_lengths, int is_unique)
+
+////////////////////20211118
+RC BplusTreeHandler::create(const char *file_name, AttrType attr_type, int attr_length, int is_unique)
 {
   BPPageHandle page_handle;
   IndexNode *root;
@@ -72,29 +74,11 @@ RC BplusTreeHandler::create(const char *file_name, std::vector<AttrType> attr_ty
     return rc;
   }
   IndexFileHeader *file_header =(IndexFileHeader *)pdata;
-  file_header->field_num = (int)attr_types.size() + 1;
-  if (file_header->field_num > 10)
-  {
-    rc = RC::INVALID_ARGUMENT;
-    LOG_ERROR("too many muti index num %d", file_header->field_num);
-  }
-  int sum_length = 4;
-  file_header->attr_lengths[0] = 4; 
-  file_header->attr_types[0] = INTS;
-  for (int i = 1;i < file_header->field_num;i++){
-    ////LOG_INFO("%d %d",attr_types[i],attr_lengths[i]);
-    file_header->attr_lengths[i] = attr_lengths[i - 1];
-    sum_length += attr_lengths[i - 1];
-    file_header->attr_types[i] = attr_types[i - 1];
-  }
-  for (int i = 0;i < file_header->field_num;i++){
-    //LOG_INFO("%d %d",file_header->attr_types[i],file_header->attr_lengths[i]);
-
-  }
-  file_header->attr_length = sum_length;
-  file_header->key_length = sum_length + sizeof(RID);
+  file_header->attr_length = attr_length;
+  file_header->key_length = attr_length + sizeof(RID);
+  file_header->attr_type = attr_type;
   file_header->node_num = 1;
-  file_header->order=((int)BP_PAGE_DATA_SIZE-sizeof(IndexFileHeader)-sizeof(IndexNode))/(sum_length+2*sizeof(RID));
+  file_header->order=((int)BP_PAGE_DATA_SIZE-sizeof(IndexFileHeader)-sizeof(IndexNode))/(attr_length+2*sizeof(RID));
   file_header->root_page = page_num;
   ////////////////////20211118
   file_header->unique = is_unique;
@@ -123,80 +107,6 @@ RC BplusTreeHandler::create(const char *file_name, std::vector<AttrType> attr_ty
 
   memcpy(&file_header_, pdata, sizeof(file_header_));
   header_dirty_ = false;
-
-  return SUCCESS;
-}
-
-////////////////////20211118
-RC BplusTreeHandler::create(const char *file_name, AttrType attr_type, int attr_length, int is_unique)
-{
-  // BPPageHandle page_handle;
-  // IndexNode *root;
-  // char *pdata;
-  // RC rc;
-  // DiskBufferPool *disk_buffer_pool = theGlobalDiskBufferPool();
-  // rc = disk_buffer_pool->create_file(file_name);
-  // if(rc!=SUCCESS){
-  //   return rc;
-  // }
-
-  // int file_id;
-  // rc = disk_buffer_pool->open_file(file_name, &file_id);
-  // if(rc != SUCCESS){
-  //   LOG_ERROR("Failed to open file. file name=%s, rc=%d:%s", file_name, rc, strrc(rc));
-  //   return rc;
-  // }
-  // rc = disk_buffer_pool->allocate_page(file_id, &page_handle);
-  // if(rc!=SUCCESS){
-  //   LOG_ERROR("Failed to allocate page. file name=%s, rc=%d:%s", file_name, rc, strrc(rc));
-  //   return rc;
-  // }
-  // rc = disk_buffer_pool->get_data(&page_handle, &pdata);
-  // if(rc!=SUCCESS){
-  //   LOG_ERROR("Failed to get data. file name=%s, rc=%d:%s", file_name, rc, strrc(rc));
-  //   return rc;
-  // }
-
-  // PageNum page_num;
-  // rc = disk_buffer_pool->get_page_num(&page_handle, &page_num);
-  // if(rc!=SUCCESS){
-  //   LOG_ERROR("Failed to get page num. file name=%s, rc=%d:%s", file_name, rc, strrc(rc));
-  //   return rc;
-  // }
-  // IndexFileHeader *file_header =(IndexFileHeader *)pdata;
-  // file_header->attr_length = attr_length;
-  // file_header->key_length = attr_length + sizeof(RID);
-  // file_header->attr_type = attr_type;
-  // file_header->node_num = 1;
-  // file_header->order=((int)BP_PAGE_DATA_SIZE-sizeof(IndexFileHeader)-sizeof(IndexNode))/(attr_length+2*sizeof(RID));
-  // file_header->root_page = page_num;
-  // ////////////////////20211118
-  // file_header->unique = is_unique;
-
-  // root = get_index_node(pdata);
-  // root->is_leaf = 1;
-  // root->key_num = 0;
-  // root->parent = -1;
-  // root->keys = nullptr;
-  // root->rids = nullptr;
-  // ////////////////////20211118
-  // root->unique = is_unique;
-
-  // rc = disk_buffer_pool->mark_dirty(&page_handle);
-  // if(rc!=SUCCESS){
-  //   return rc;
-  // }
-
-  // rc = disk_buffer_pool->unpin_page(&page_handle);
-  // if(rc!=SUCCESS){
-  //   return rc;
-  // }
-
-  // disk_buffer_pool_ = disk_buffer_pool;
-  // file_id_ = file_id;
-
-  // memcpy(&file_header_, pdata, sizeof(file_header_));
-  // header_dirty_ = false;
 
   return SUCCESS;
 }
@@ -262,7 +172,6 @@ int CompareKey(const char *pdata, const char *pkey,AttrType attr_type,int attr_l
     case INTS: {
       i1 = *(int *) pdata;
       i2 = *(int *) pkey;
-      //LOG_INFO("%d %d",i1,i2);
       if (i1 > i2)
         return 1;
       if (i1 < i2)
@@ -301,36 +210,22 @@ int CompareKey(const char *pdata, const char *pkey,AttrType attr_type,int attr_l
   }
   return -2;//This means error happens
 }
-int CmpKey(AttrType attr_types[], int attr_lengths[], const char *pdata, const char *pkey, int field_num)
+int CmpKey(AttrType attr_type, int attr_length, const char *pdata, const char *pkey)
 {
-  int sum_length = 0;
-  for (int i = 0;i < field_num;i++){
-    int result = CompareKey(pdata + sum_length, pkey + sum_length, attr_types[i], attr_lengths[i]);
-    //LOG_INFO("%d %d %d",attr_types[i],attr_lengths[i], result);
-    sum_length += attr_lengths[i];
-    if (0 != result) {
-      return result;
-    }
+  int result = CompareKey(pdata, pkey, attr_type, attr_length);
+  if (0 != result) {
+    return result;
   }
   
-  RID *rid1 = (RID *) (pdata + sum_length);
-  RID *rid2 = (RID *) (pkey + sum_length);
-  //LOG_INFO("%d %d %d %d",rid1->page_num,rid1->slot_num,rid2->page_num,rid2->slot_num);
+  RID *rid1 = (RID *) (pdata + attr_length);
+  RID *rid2 = (RID *) (pkey + attr_length);
   return CmpRid(rid1, rid2);
 }
 
 /////////////////////////////2021/11/18
-int CmpKey_unique(AttrType attr_types[], int attr_lengths[], const char *pdata, const char *pkey, int field_num)
+int CmpKey_unique(AttrType attr_type, int attr_length, const char *pdata, const char *pkey)
 {
-  int result = 0;
-  int sum_length = 0;
-  for (int i = 0;i < field_num;i++){
-    
-    result = CompareKey(pdata + sum_length, pkey + sum_length, attr_types[i], attr_lengths[i]);
-    sum_length += attr_lengths[i];
-    //LOG_INFO("%d %d %d %d",attr_types[i],attr_lengths[i], result, i);
-    if (result != 0) return result;
-  }
+  int result = CompareKey(pdata, pkey, attr_type, attr_length);
   return result;
 }
 
@@ -352,7 +247,7 @@ RC BplusTreeHandler::find_leaf(const char *pkey,PageNum *leaf_page) {
   node = get_index_node(pdata);
   while(0 == node->is_leaf){
     for(i = 0; i < node->key_num; i++){
-      tmp = CmpKey(file_header_.attr_types, file_header_.attr_lengths,pkey,node->keys + i * file_header_.key_length, file_header_.field_num);
+      tmp = CmpKey(file_header_.attr_type, file_header_.attr_length,pkey,node->keys + i * file_header_.key_length);
       if(tmp < 0)
         break;
     }
@@ -404,11 +299,10 @@ RC BplusTreeHandler::insert_into_leaf(PageNum leaf_page, const char *pkey, const
 
   for(insert_pos = 0; insert_pos < node->key_num; insert_pos++){
     if(unique == 1){
-      //LOG_INFO("%d  %d",file_header_.attr_types[0],file_header_.attr_lengths[0]);
-      tmp = CmpKey_unique(file_header_.attr_types, file_header_.attr_lengths, pkey, node->keys + insert_pos * file_header_.key_length, file_header_.field_num);
+      tmp = CmpKey_unique(file_header_.attr_type, file_header_.attr_length, pkey, node->keys + insert_pos * file_header_.key_length);
     }
     else{
-      tmp = CmpKey(file_header_.attr_types, file_header_.attr_lengths, pkey, node->keys + insert_pos * file_header_.key_length, file_header_.field_num);
+      tmp = CmpKey(file_header_.attr_type, file_header_.attr_length, pkey, node->keys + insert_pos * file_header_.key_length);
     }
     
     if (tmp == 0) {
@@ -531,12 +425,12 @@ RC BplusTreeHandler::insert_into_leaf_after_split(PageNum leaf_page, const char 
 ////////////////////////20211118
   for(insert_pos=0;insert_pos<leaf->key_num;insert_pos++){
     if(unique == 1){
-      tmp=CmpKey_unique(file_header_.attr_types, file_header_.attr_lengths, pkey, leaf->keys+insert_pos*file_header_.key_length, file_header_.field_num);
+      tmp=CmpKey_unique(file_header_.attr_type, file_header_.attr_length, pkey, leaf->keys+insert_pos*file_header_.key_length);
       if(tmp == 0)
         return RC::RECORD_DUPLICATE_KEY;
     }
     else{
-      tmp=CmpKey(file_header_.attr_types, file_header_.attr_lengths, pkey, leaf->keys+insert_pos*file_header_.key_length, file_header_.field_num); 
+      tmp=CmpKey(file_header_.attr_type, file_header_.attr_length, pkey, leaf->keys+insert_pos*file_header_.key_length); 
     }
     if(tmp<0)
       break;
@@ -1036,7 +930,7 @@ RC BplusTreeHandler::get_entry(const char *pkey,RID *rid) {
 
   leaf = get_index_node(pdata);
   for(i=0;i<leaf->key_num;i++){
-    if(CmpKey(file_header_.attr_types, file_header_.attr_lengths,key,leaf->keys+(i*file_header_.key_length),file_header_.field_num)==0){
+    if(CmpKey(file_header_.attr_type, file_header_.attr_length,key,leaf->keys+(i*file_header_.key_length))==0){
       memcpy(rid,leaf->rids+i,sizeof(RID));
       free(key);
       return SUCCESS;
@@ -1066,8 +960,7 @@ RC BplusTreeHandler::delete_entry_from_node(PageNum node_page,const char *pkey) 
   node = get_index_node(pdata);
 
   for(delete_index=0;delete_index<node->key_num;delete_index++){
-    //LOG_INFO("%d",delete_index);
-    tmp=CmpKey(file_header_.attr_types, file_header_.attr_lengths, pkey, node->keys+delete_index*file_header_.key_length,file_header_.field_num);
+    tmp=CmpKey(file_header_.attr_type, file_header_.attr_length, pkey, node->keys+delete_index*file_header_.key_length);
     if(tmp==0)
       break;
   }
@@ -1727,7 +1620,7 @@ RC BplusTreeHandler::find_first_index_satisfied(CompOp compop, const char *key, 
 
     node = get_index_node(pdata);
     for(i = 0; i < node->key_num; i++){
-      tmp=CmpKey(file_header_.attr_types,file_header_.attr_lengths,node->keys+i*file_header_.key_length,key,file_header_.field_num);
+      tmp=CompareKey(node->keys+i*file_header_.key_length,key,file_header_.attr_type,file_header_.attr_length);
       if(compop == EQUAL_TO ||compop == GREAT_EQUAL){
         if(tmp>=0){
           rc = disk_buffer_pool_->get_page_num(&page_handle, page_num);
@@ -1958,29 +1851,27 @@ bool BplusTreeScanner::satisfy_condition(const char *pkey) {
     return true;
   }
 
-  bool flag=true;
-  int tmp_offset = 0;
-  for (int i = 0;i < index_handler_.file_header_.field_num && flag;i++){
-  AttrType  attr_type = index_handler_.file_header_.attr_types[i];
-  int attr_length = index_handler_.file_header_.attr_lengths[i];
+  AttrType  attr_type = index_handler_.file_header_.attr_type;
   switch(attr_type){
     case INTS:
-      i1=*(int *)(pkey + tmp_offset);
-      i2=*(int *)(value_ + tmp_offset);
+      i1=*(int *)pkey;
+      i2=*(int *)value_;
       break;
     case FLOATS:
-      f1=*(float *)(pkey + tmp_offset);
-      f2=*(float *)(value_ + tmp_offset);
+      f1=*(float *)pkey;
+      f2=*(float *)value_;
       break;
     case CHARS:
-      s1=pkey + tmp_offset;
-      s2=value_ + tmp_offset;
+      s1=pkey;
+      s2=value_;
       break;
     default:
       LOG_PANIC("Unknown attr type: %d", attr_type);
   }
-  tmp_offset += attr_length;
-  
+
+  bool flag=false;
+
+  int attr_length = index_handler_.file_header_.attr_length;
   switch(comp_op_){
     case EQUAL_TO:
       switch(attr_type){
@@ -2074,7 +1965,6 @@ bool BplusTreeScanner::satisfy_condition(const char *pkey) {
       break;
     default:
       LOG_PANIC("Unknown comp op: %d", comp_op_);
-  }
   }
   return flag;
 }

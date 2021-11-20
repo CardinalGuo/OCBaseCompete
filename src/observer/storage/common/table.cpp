@@ -745,7 +745,7 @@ RC Table::create_index(Trx *trx, const char *index_name, char *attribute_name[10
 
   std::string index_file = index_data_file(base_dir_.c_str(), name(), index_name);
 
-  rc = index->create(index_file.c_str(), new_index_meta, field_vec);
+  rc = index->create(index_file.c_str(), new_index_meta, field_vec[0]);
   if (rc != RC::SUCCESS)
   {
     delete index;
